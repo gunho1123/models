@@ -14,55 +14,208 @@
 # ==============================================================================
 """Contains common building blocks for neural networks."""
 
-from typing import Optional
-
 # Import libraries
-
-from absl import logging
 import tensorflow as tf
 
 from official.modeling import tf_utils
 
+@tf.keras.utils.register_keras_serializable(package='Vision')
+class ConvBNReLU(tf.keras.layers.Layer):
+  """ 'Conv + BN + ReLU' layer in BASNet. """
 
-def make_divisible(value: float,
-                   divisor: int,
-                   min_value: Optional[float] = None
-                   ) -> int:
-  """This is to ensure that all layers have channels that are divisible by 8.
+  def __init__(self,
+               filters,
+               kernel_size,
+               strides,
+               dilation,
+               kernel_initializer='VarianceScaling',
+               kernel_regularizer=None,
+               bias_regularizer=None,
+               activation='relu',
+               use_sync_bn=False,
+               norm_momentum=0.99,
+               norm_epsilon=0.001,
+               **kwargs):
+    """Implementation for squeeze and excitation.
 
-  Args:
-    value: `float` original value.
-    divisor: `int` the divisor that need to be checked upon.
-    min_value: `float` minimum value threshold.
+    Args:
+      filters: `int` number of filters for the first two convolutions. Note that
+        the third and final convolution will use 4 times as many filters.
+      strides: `int` block stride. If greater than 1, this block will ultimately
+        downsample the input.
+      kernel_initializer: kernel_initializer for convolutional layers.
+      kernel_regularizer: tf.keras.regularizers.Regularizer object for Conv2D.
+                          Default to None.
+      bias_regularizer: tf.keras.regularizers.Regularizer object for Conv2d.
+                        Default to None.
+      activation: `str` name of the activation function.
+      use_sync_bn: if True, use synchronized batch normalization.
+      norm_momentum: `float` normalization omentum for the moving average.
+      norm_epsilon: `float` small float added to variance to avoid dividing by
+        zero.
+      **kwargs: keyword arguments to be passed.
+    """
+ 
+    super(ConvBNReLU, self).__init__(**kwargs)
 
-  Returns:
-    The adjusted value in `int` that divisible against divisor.
-  """
-  if min_value is None:
-    min_value = divisor
-  new_value = max(min_value, int(value + divisor / 2) // divisor * divisor)
-  # Make sure that round down does not go down by more than 10%.
-  if new_value < 0.9 * value:
-    new_value += divisor
-  return new_value
+    self._filters = filters
+    self._kernel_size = kernel_size
+    self._strides = strides
+    self._dilation = dilation
+    self._kernel_initializer = kernel_initializer
+    self._kernel_regularizer = kernel_regularizer
+    self._bias_regularizer = bias_regularizer
+    self._activation = activation
+    self._use_sync_bn = use_sync_bn
+    self._norm_momentum = norm_momentum
+    self._norm_epsilon = norm_epsilon
+
+    if use_sync_bn:
+      self._norm = tf.keras.layers.experimental.SyncBatchNormalization
+    else:
+      self._norm = tf.keras.layers.BatchNormalization
+    if tf.keras.backend.image_data_format() == 'channels_last':
+      self._bn_axis = -1
+    else:
+      self._bn_axis = 1
+    self._activation_fn = tf_utils.get_activation(activation)
+
+  def build(self, input_shape):
+    self._conv1 = tf.keras.layers.Conv2D(
+        filters=self._filters,
+        kernel_size=self._kernel_size,
+        strides=self._strides,
+        padding='same',
+        dilation_rate=self._dilation
+        use_bias=False,
+        kernel_initializer=self._kernel_initializer,
+        kernel_regularizer=self._kernel_regularizer,
+        bias_regularizer=self._bias_regularizer)
+ 
+    super(ConvBNReLU, self).build(input_shape)
+
+  def get_config(self):
+    config = {
+        'filters': self._filters,
+        'kernel_size': self._kernel_size,
+        'strides': self._strides,
+        'dilation': self._dilation,
+        'kernel_initializer': self._kernel_initializer,
+        'kernel_regularizer': self._kernel_regularizer,
+        'bias_regularizer': self._bias_regularizer,
+        'activation': self._activation,
+        'use_sync_bn': self._use_sync_bn,
+        'norm_momentum': self._norm_momentum,
+        'norm_epsilon': self._norm_epsilon
+    }
+    base_config = super(ConvBNReLU, self).get_config()
+    return dict(list(base_config.items()) + list(config.items()))
 
 
-def round_filters(filters: int,
-                  multiplier: float,
-                  divisor: int = 8,
-                  min_depth: Optional[int] = None,
-                  skip: bool = False):
-  """Round number of filters based on width multiplier."""
-  orig_f = filters
-  if skip or not multiplier:
-    return filters
+  def call(self, inputs):
+    x = self._conv1(inputs)
+    x = self._norm(x)
+    x = self._activation_fn(x)
 
-  new_filters = make_divisible(value=filters * multiplier,
-                               divisor=divisor,
-                               min_value=min_depth)
+    return x
 
-  logging.info('round_filter input=%s output=%s', orig_f, new_filters)
-  return int(new_filters)
+@tf.keras.utils.register_keras_serializable(package='Vision')
+class ConvBNMaxPool(tf.keras.layers.Layer):
+  """ 'Conv + BN + MaxPool' layer in BASNet. """
+
+  def __init__(self,
+               filters,
+               kernel_size,
+               strides,
+               kernel_initializer='VarianceScaling',
+               kernel_regularizer=None,
+               bias_regularizer=None,
+               use_sync_bn=False,
+               norm_momentum=0.99,
+               norm_epsilon=0.001,
+               **kwargs):
+    """Implementation for squeeze and excitation.
+
+    Args:
+      filters: `int` number of filters for the first two convolutions. Note that
+        the third and final convolution will use 4 times as many filters.
+      strides: `int` block stride. If greater than 1, this block will ultimately
+        downsample the input.
+      kernel_initializer: kernel_initializer for convolutional layers.
+      kernel_regularizer: tf.keras.regularizers.Regularizer object for Conv2D.
+                          Default to None.
+      bias_regularizer: tf.keras.regularizers.Regularizer object for Conv2d.
+                        Default to None.
+      activation: `str` name of the activation function.
+      use_sync_bn: if True, use synchronized batch normalization.
+      norm_momentum: `float` normalization omentum for the moving average.
+      norm_epsilon: `float` small float added to variance to avoid dividing by
+        zero.
+      **kwargs: keyword arguments to be passed.
+    """
+ 
+    super(ConvBNMaxPool, self).__init__(**kwargs)
+
+    self._filters = filters
+    self._kernel_size = kernel_size
+    self._strides = strides
+    self._kernel_initializer = kernel_initializer
+    self._kernel_regularizer = kernel_regularizer
+    self._bias_regularizer = bias_regularizer
+    self._use_sync_bn = use_sync_bn
+    self._norm_momentum = norm_momentum
+    self._norm_epsilon = norm_epsilon
+
+    if use_sync_bn:
+      self._norm = tf.keras.layers.experimental.SyncBatchNormalization
+    else:
+      self._norm = tf.keras.layers.BatchNormalization
+    if tf.keras.backend.image_data_format() == 'channels_last':
+      self._bn_axis = -1
+    else:
+      self._bn_axis = 1
+
+  def build(self, input_shape):
+    self._conv1 = tf.keras.layers.Conv2D(
+        filters=self._filters,
+        kernel_size=self._kernel_size,
+        strides=self._strides,
+        padding='same',
+        use_bias=False,
+        kernel_initializer=self._kernel_initializer,
+        kernel_regularizer=self._kernel_regularizer,
+        bias_regularizer=self._bias_regularizer)
+
+     self._maxpool = tf.keras.layers.MaxPooling2D(
+        pool_size=2,
+        strides=2,
+        padding='valid')
+ 
+    super(ConvBNMaxPool, self).build(input_shape)
+
+  def get_config(self):
+    config = {
+        'filters': self._filters,
+        'kernel_size': self._kernel_size,
+        'strides': self._strides,
+        'kernel_initializer': self._kernel_initializer,
+        'kernel_regularizer': self._kernel_regularizer,
+        'bias_regularizer': self._bias_regularizer,
+        'use_sync_bn': self._use_sync_bn,
+        'norm_momentum': self._norm_momentum,
+        'norm_epsilon': self._norm_epsilon
+    }
+    base_config = super(ConvBNMaxPool, self).get_config()
+    return dict(list(base_config.items()) + list(config.items()))
+
+
+  def call(self, inputs):
+    x = self._conv1(inputs)
+    x = self._norm(x)
+    x = self._maxpool(x)
+
+    return x
+
 
 
 @tf.keras.utils.register_keras_serializable(package='Vision')
@@ -71,42 +224,34 @@ class SqueezeExcitation(tf.keras.layers.Layer):
 
   def __init__(self,
                in_filters,
-               out_filters,
                se_ratio,
-               divisible_by=1,
+               expand_ratio,
                kernel_initializer='VarianceScaling',
                kernel_regularizer=None,
                bias_regularizer=None,
                activation='relu',
-               gating_activation='sigmoid',
                **kwargs):
     """Implementation for squeeze and excitation.
 
     Args:
       in_filters: `int` number of filters of the input tensor.
-      out_filters: `int` number of filters of the output tensor.
       se_ratio: `float` or None. If not None, se ratio for the squeeze and
         excitation layer.
-      divisible_by: `int` ensures all inner dimensions are divisible by this
-        number.
+      expand_ratio: `int` expand_ratio for a MBConv block.
       kernel_initializer: kernel_initializer for convolutional layers.
       kernel_regularizer: tf.keras.regularizers.Regularizer object for Conv2D.
         Default to None.
       bias_regularizer: tf.keras.regularizers.Regularizer object for Conv2d.
         Default to None.
       activation: `str` name of the activation function.
-      gating_activation: `str` name of the activation function for final gating
-        function.
       **kwargs: keyword arguments to be passed.
     """
     super(SqueezeExcitation, self).__init__(**kwargs)
 
     self._in_filters = in_filters
-    self._out_filters = out_filters
     self._se_ratio = se_ratio
-    self._divisible_by = divisible_by
+    self._expand_ratio = expand_ratio
     self._activation = activation
-    self._gating_activation = gating_activation
     self._kernel_initializer = kernel_initializer
     self._kernel_regularizer = kernel_regularizer
     self._bias_regularizer = bias_regularizer
@@ -115,12 +260,9 @@ class SqueezeExcitation(tf.keras.layers.Layer):
     else:
       self._spatial_axis = [2, 3]
     self._activation_fn = tf_utils.get_activation(activation)
-    self._gating_activation_fn = tf_utils.get_activation(gating_activation)
 
   def build(self, input_shape):
-    num_reduced_filters = make_divisible(
-        max(1, int(self._in_filters * self._se_ratio)),
-        divisor=self._divisible_by)
+    num_reduced_filters = max(1, int(self._in_filters * self._se_ratio))
 
     self._se_reduce = tf.keras.layers.Conv2D(
         filters=num_reduced_filters,
@@ -133,7 +275,7 @@ class SqueezeExcitation(tf.keras.layers.Layer):
         bias_regularizer=self._bias_regularizer)
 
     self._se_expand = tf.keras.layers.Conv2D(
-        filters=self._out_filters,
+        filters=self._in_filters * self._expand_ratio,
         kernel_size=1,
         strides=1,
         padding='same',
@@ -147,24 +289,22 @@ class SqueezeExcitation(tf.keras.layers.Layer):
   def get_config(self):
     config = {
         'in_filters': self._in_filters,
-        'out_filters': self._out_filters,
         'se_ratio': self._se_ratio,
-        'divisible_by': self._divisible_by,
+        'expand_ratio': self._expand_ratio,
         'strides': self._strides,
         'kernel_initializer': self._kernel_initializer,
         'kernel_regularizer': self._kernel_regularizer,
         'bias_regularizer': self._bias_regularizer,
         'activation': self._activation,
-        'gating_activation': self._gating_activation,
     }
     base_config = super(SqueezeExcitation, self).get_config()
     return dict(list(base_config.items()) + list(config.items()))
 
   def call(self, inputs):
     x = tf.reduce_mean(inputs, self._spatial_axis, keepdims=True)
-    x = self._activation_fn(self._se_reduce(x))
-    x = self._gating_activation_fn(self._se_expand(x))
-    return x * inputs
+    x = self._se_expand(self._activation_fn(self._se_reduce(x)))
+
+    return tf.sigmoid(x) * inputs
 
 
 @tf.keras.utils.register_keras_serializable(package='Vision')
@@ -191,8 +331,8 @@ class StochasticDepth(tf.keras.layers.Layer):
 
   def call(self, inputs, training=None):
     if training is None:
-      training = tf.keras.backend.learning_phase()
-    if not training or self._drop_rate is None or self._drop_rate == 0:
+      is_training = tf.keras.backend.learning_phase()
+    if not is_training or self._drop_rate is None or self._drop_rate == 0:
       return inputs
 
     keep_prob = 1.0 - self._drop_rate
