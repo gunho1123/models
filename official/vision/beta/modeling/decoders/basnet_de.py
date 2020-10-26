@@ -31,13 +31,13 @@ layers = tf.keras.layers
 
 # (num_filters_ conv1, convm, conv2, scale_factor, mode)
 BASNET_DE_SPECS = [
-            (512, 2, 512, 2, 512, 2, 32, 'bilinear'), #Bridge(Sup1)
-            (512, 1, 512, 2, 512, 2, 32, 'bilinear'), #Sup2
-            (512, 1, 512, 1, 512, 1, 16, 'bilinear'), #Sup3
-            (512, 1, 512, 1, 256, 1, 8,  'bilinear'), #Sup4
-            (256, 1, 256, 1, 128, 1, 4,  'bilinear'), #Sup5
-            (128, 1, 128, 1, 64,  1, 2,  'bilinear'), #Sup6
-            (64,  1, 64,  1, 64,  1, 1,  'bilinear')  #Sup7
+            (512, 2, 512, 2, 512, 2, 32, 'bilinear'), #Bridge(Sup0)
+            (512, 1, 512, 2, 512, 2, 32, 'bilinear'), #Sup1
+            (512, 1, 512, 1, 512, 1, 16, 'bilinear'), #Sup2
+            (512, 1, 512, 1, 256, 1, 8,  'bilinear'), #Sup3
+            (256, 1, 256, 1, 128, 1, 4,  'bilinear'), #Sup4
+            (128, 1, 128, 1, 64,  1, 2,  'bilinear'), #Sup5
+            (64,  1, 64,  1, 64,  1, 1,  'bilinear')  #Sup6
         ]
 
 @tf.keras.utils.register_keras_serializable(package='Vision')
@@ -127,16 +127,16 @@ class BASNet_De(tf.keras.Model):
                 norm_epsilon=0.001
                 )(x)
         
-        sup[str(i+1)] = layers.Conv2D(
+        sup[str(i)] = layers.Conv2D(
             filters=1, kernel_size=3, strides=1, use_bias=False, padding='same',
             kernel_initializer=self._kernel_initializer,
             kernel_regularizer=self._kernel_regularizer,
             bias_regularizer=self._bias_regularizer
             )(x)
-        sup[str(i+1)] = layers.UpSampling2D(
+        sup[str(i)] = layers.UpSampling2D(
             size=spec[3],
             interpolation=spec[4]
-            )(sup[str(i+1)])
+            )(sup[str(i)])
         x = layers.UpSampling2D(
             size=2,
             interpolation=spec[4]
