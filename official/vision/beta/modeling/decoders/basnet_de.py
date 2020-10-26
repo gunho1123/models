@@ -108,39 +108,39 @@ class BASNet_De(tf.keras.Model):
     sup = {}
 
     for i, spec in enumerate(BASNET_DE_SPECS):
-        if i == 0:
-            x = inputs['5']
-        else:
-            x = layers.concatenate(inputs[str(6-i)], x, axis=1)
-        for j in range(3):
-            x = nn_layers.ConvBNReLU(
-                filters=spec[2*j],
-                kernel_size=3,
-                strides=1,
-                dilation=spec[2*j+1],
-                kernel_initializer=self._kernel_initializer,
-                kernel_regularizer=self._kernel_regularizer,
-                bias_regularizer=self._bias_regularizer,
-                activation='relu',
-                use_sync_bn=False,
-                norm_momentum=0.99,
-                norm_epsilon=0.001
-                )(x)
-        
-        sup[str(i)] = layers.Conv2D(
-            filters=1, kernel_size=3, strides=1, use_bias=False, padding='same',
+      if i == 0:
+        x = inputs['5']
+      else:
+        x = layers.concatenate(inputs[str(6-i)], x, axis=1)
+      for j in range(3):
+        x = nn_layers.ConvBNReLU(
+            filters=spec[2*j],
+            kernel_size=3,
+            strides=1,
+            dilation=spec[2*j+1],
             kernel_initializer=self._kernel_initializer,
             kernel_regularizer=self._kernel_regularizer,
-            bias_regularizer=self._bias_regularizer
+            bias_regularizer=self._bias_regularizer,
+            activation='relu',
+            use_sync_bn=False,
+            norm_momentum=0.99,
+            norm_epsilon=0.001
             )(x)
-        sup[str(i)] = layers.UpSampling2D(
-            size=spec[3],
-            interpolation=spec[4]
-            )(sup[str(i)])
-        x = layers.UpSampling2D(
-            size=2,
-            interpolation=spec[4]
-            )(x)
+
+      sup[str(i)] = layers.Conv2D(
+          filters=1, kernel_size=3, strides=1, use_bias=False, padding='same',
+          kernel_initializer=self._kernel_initializer,
+          kernel_regularizer=self._kernel_regularizer,
+          bias_regularizer=self._bias_regularizer
+          )(x)
+      sup[str(i)] = layers.UpSampling2D(
+          size=spec[3],
+          interpolation=spec[4]
+          )(sup[str(i)])
+      x = layers.UpSampling2D(
+          size=2,
+          interpolation=spec[4]
+          )(x)
 
 
     self._output_specs = {

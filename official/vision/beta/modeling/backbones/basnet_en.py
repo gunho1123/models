@@ -108,7 +108,6 @@ class BASNet_En(tf.keras.Model):
 
     endpoints = {}
 
-
     for i, spec in enumerate(BASNET_EN_SPECS):
       if spec[0] == 'residual':
         block_fn = nn_blocks.ResidualBlock
@@ -124,7 +123,7 @@ class BASNet_En(tf.keras.Model):
           block_repeats=spec[2],
           name='block_group_l{}'.format(i + 2))
       if i == 3 or i == 4:
-          x = layers.MaxPool2D(pool_size=2, strides=2, padding='same')(x)
+        x = layers.MaxPool2D(pool_size=2, strides=2, padding='same')(x)
       endpoints[str(i)] = x
 
     self._output_specs = {l: endpoints[l].get_shape() for l in endpoints}

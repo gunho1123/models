@@ -91,23 +91,23 @@ class RefUnet(tf.keras.Model):
 
     # Top-down
     for i in range(4):
-        x = nn_layers.ConvBNReLU(
-            filters=64,
-            kernel_size=3,
-            strides=1,
-            dilation=1,
-            kernel_initializer=self._kernel_initializer,
-            kernel_regularizer=self._kernel_regularizer,
-            bias_regularizer=self._bias_regularizer,
-            activation='relu',
-            use_sync_bn=False,
-            norm_momentum=0.99,
-            norm_epsilon=0.001
-            )(x)
+      x = nn_layers.ConvBNReLU(
+          filters=64,
+          kernel_size=3,
+          strides=1,
+          dilation=1,
+          kernel_initializer=self._kernel_initializer,
+          kernel_regularizer=self._kernel_regularizer,
+          bias_regularizer=self._bias_regularizer,
+          activation='relu',
+          use_sync_bn=False,
+          norm_momentum=0.99,
+          norm_epsilon=0.001
+          )(x)
         
-        endpoints[str(i)] = x
+      endpoints[str(i)] = x
 
-        x = layers.MaxPool2D(pool_size=2, strides=2, padding='same')(x)
+      x = layers.MaxPool2D(pool_size=2, strides=2, padding='same')(x)
 
 
     # Bridge
@@ -133,33 +133,33 @@ class RefUnet(tf.keras.Model):
     # Bottom-up
 
     for i in range(4):
-        x = layers.concatenate(endpoints[str(3-i)], x, axis=1)
-        x = nn_layers.ConvBNReLU(
-            filters=64,
-            kernel_size=3,
-            strides=1,
-            dilation=1,
+      x = layers.concatenate(endpoints[str(3-i)], x, axis=1)
+      x = nn_layers.ConvBNReLU(
+          filters=64,
+          kernel_size=3,
+          strides=1,
+          dilation=1,
+          kernel_initializer=self._kernel_initializer,
+          kernel_regularizer=self._kernel_regularizer,
+          bias_regularizer=self._bias_regularizer,
+          activation='relu',
+          use_sync_bn=False,
+          norm_momentum=0.99,
+          norm_epsilon=0.001
+          )(x)
+
+      if i == 3:
+        x = layers.Conv2D(
+            filters=1, kernel_size=3, strides=1, use_bias=False, padding='same',
             kernel_initializer=self._kernel_initializer,
             kernel_regularizer=self._kernel_regularizer,
-            bias_regularizer=self._bias_regularizer,
-            activation='relu',
-            use_sync_bn=False,
-            norm_momentum=0.99,
-            norm_epsilon=0.001
+            bias_regularizer=self._bias_regularizer
             )(x)
-
-        if i == 3:
-            x = layers.Conv2D(
-                filters=1, kernel_size=3, strides=1, use_bias=False, padding='same',
-                kernel_initializer=self._kernel_initializer,
-                kernel_regularizer=self._kernel_regularizer,
-                bias_regularizer=self._bias_regularizer
-                )(x)
-        else:
-            x = layers.UpSampling2D(
-                size=2,
-                interpolation='bilinear'
-                )(x)
+      else:
+        x = layers.UpSampling2D(
+            size=2,
+            interpolation='bilinear'
+            )(x)
 
     output = x
 
