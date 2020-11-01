@@ -24,12 +24,12 @@ import tensorflow as tf
 
 from official.modeling import tf_utils
 from official.vision.beta.ops import spatial_transform_ops
-
+from official.vision.beta.modeling.layers import nn_layers
 
 layers = tf.keras.layers
 
-
-# (num_filters_ conv1, convm, conv2, scale_factor, mode)
+# nf : num_filters, dr : dilation_rate
+# (conv1_nf, conv1_dr, convm_nf, convm_dr, conv2_nf, conv2_dr, scale_factor, mode)
 BASNET_DE_SPECS = [
             (512, 2, 512, 2, 512, 2, 32, 'bilinear'), #Bridge(Sup0)
             (512, 1, 512, 2, 512, 2, 32, 'bilinear'), #Sup1
@@ -42,7 +42,7 @@ BASNET_DE_SPECS = [
 
 @tf.keras.utils.register_keras_serializable(package='Vision')
 class BASNet_De(tf.keras.Model):
-  """Feature pyramid network."""
+  """BASNet Decoder."""
 
   def __init__(self,
                input_specs,
@@ -55,13 +55,13 @@ class BASNet_De(tf.keras.Model):
                kernel_regularizer=None,
                bias_regularizer=None,
                **kwargs):
-    """FPN initialization function.
+    """BASNet Decoder initialization function.
 
     Args:
       input_specs: `dict` input specifications. A dictionary consists of
         {level: TensorShape} from a backbone.
       use_separable_conv: `bool`, if True use separable convolution for
-        convolution in FPN layers.
+        convolution in BASNet layers.
       activation: `str` name of the activation function.
       use_sync_bn: if True, use synchronized batch normalization.
       norm_momentum: `float` normalization omentum for the moving average.
@@ -111,41 +111,46 @@ class BASNet_De(tf.keras.Model):
       if i == 0:
         x = inputs['5']
       else:
-        x = layers.concatenate(inputs[str(6-i)], x, axis=1)
+        x = layers.Concatenate(axis=-1)([inputs[str(6-i)], x])
       for j in range(3):
         x = nn_layers.ConvBNReLU(
             filters=spec[2*j],
             kernel_size=3,
             strides=1,
             dilation=spec[2*j+1],
-            kernel_initializer=self._kernel_initializer,
-            kernel_regularizer=self._kernel_regularizer,
-            bias_regularizer=self._bias_regularizer,
+            kernel_initializer=kernel_initializer,
+            kernel_regularizer=kernel_regularizer,
+            bias_regularizer=bias_regularizer,
             activation='relu',
             use_sync_bn=False,
             norm_momentum=0.99,
             norm_epsilon=0.001
             )(x)
 
-      sup[str(i)] = layers.Conv2D(
+      output = layers.Conv2D(
           filters=1, kernel_size=3, strides=1, use_bias=False, padding='same',
-          kernel_initializer=self._kernel_initializer,
-          kernel_regularizer=self._kernel_regularizer,
-          bias_regularizer=self._bias_regularizer
+          kernel_initializer=kernel_initializer,
+          kernel_regularizer=kernel_regularizer,
+          bias_regularizer=bias_regularizer
           )(x)
-      sup[str(i)] = layers.UpSampling2D(
-          size=spec[3],
-          interpolation=spec[4]
-          )(sup[str(i)])
-      x = layers.UpSampling2D(
-          size=2,
-          interpolation=spec[4]
-          )(x)
-
+      output = layers.UpSampling2D(
+          size=spec[6],
+          interpolation=spec[7]
+          )(output)
+      output = tf.keras.layers.Activation(
+          activation='sigmoid'
+          )(output)
+      sup[str(i)] = output
+      if i != 0:
+        x = layers.UpSampling2D(
+            size=2,
+            interpolation=spec[7]
+            )(x)
 
     self._output_specs = {
-        str(level): feats[str(level)].get_shape()
-        for level in range(min_level, max_level + 1)
+        #for level in range(0, 6):
+        str(level): sup[str(level)].get_shape()
+        for level in range(0, 6)
     }
 
     super(BASNet_De, self).__init__(inputs=inputs, outputs=sup, **kwargs)

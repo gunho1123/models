@@ -77,9 +77,10 @@ class RefUnet(tf.keras.Model):
       bn_axis = 1
 
     # Build ResNet.
-    inputs = tf.keras.Input(shape=input_specs.shape[1:])
+    inputs = tf.keras.Input(shape=self._input_specs.shape[1:])
 
-    endpoints = {}
+    endpoints = {}  
+    residual = inputs
 
     x = layers.Conv2D(
         filters=64, kernel_size=3, strides=1, use_bias=False, padding='same',
@@ -133,7 +134,7 @@ class RefUnet(tf.keras.Model):
     # Bottom-up
 
     for i in range(4):
-      x = layers.concatenate(endpoints[str(3-i)], x, axis=1)
+      x = layers.Concatenate(axis=-1)([endpoints[str(3-i)], x])
       x = nn_layers.ConvBNReLU(
           filters=64,
           kernel_size=3,
@@ -161,9 +162,10 @@ class RefUnet(tf.keras.Model):
             interpolation='bilinear'
             )(x)
 
-    output = x
+    output = x + residual
 
-    self._output_specs = {l: endpoints[l].get_shape() for l in endpoints}
+    #self._output_specs = {l: endpoints[l].get_shape() for l in endpoints}
+    self._output_specs = {'0': output.get_shape()}
 
     super(RefUnet, self).__init__(inputs=inputs, outputs=output, **kwargs)
 

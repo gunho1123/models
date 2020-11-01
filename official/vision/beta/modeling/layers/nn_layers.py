@@ -86,7 +86,7 @@ class ConvBNReLU(tf.keras.layers.Layer):
         kernel_size=self._kernel_size,
         strides=self._strides,
         padding='same',
-        dilation_rate=self._dilation
+        dilation_rate=self._dilation,
         use_bias=False,
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
@@ -114,7 +114,11 @@ class ConvBNReLU(tf.keras.layers.Layer):
 
   def call(self, inputs):
     x = self._conv1(inputs)
-    x = self._norm(x)
+    x = self._norm(
+        axis=self._bn_axis,
+        momentum=self._norm_momentum,
+        epsilon=self._norm_epsilon        
+        )(x)
     x = self._activation_fn(x)
 
     return x
@@ -185,8 +189,7 @@ class ConvBNMaxPool(tf.keras.layers.Layer):
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)
-
-     self._maxpool = tf.keras.layers.MaxPooling2D(
+    self._maxpool = tf.keras.layers.MaxPooling2D(
         pool_size=2,
         strides=2,
         padding='valid')

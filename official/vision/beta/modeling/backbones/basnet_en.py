@@ -30,15 +30,15 @@ layers = tf.keras.layers
 
 # Specifications for BASNet encoder.
 # Each element in the block configuration is in the following format:
-# (block_fn, num_filters, block_repeats)
+# (block_fn, num_filters, stride, block_repeats)
 
 BASNET_EN_SPECS = [
-        ('residual', 64, 3),    #ResNet-34
-        ('residual', 128, 4),   #ResNet-34
-        ('residual', 256, 6),   #ResNet-34
-        ('residual', 512, 3),   #ResNet-34
-        ('residual', 512, 3),   #BASNet
-        ('residual', 512, 3),   #BASNet
+        ('residual', 64,  1, 3),    #ResNet-34
+        ('residual', 128, 2, 4),   #ResNet-34
+        ('residual', 256, 2, 6),   #ResNet-34
+        ('residual', 512, 2, 3),   #ResNet-34
+        ('residual', 512, 1, 3),   #BASNet
+        ('residual', 512, 1, 3),   #BASNet
     ]
 
 @tf.keras.utils.register_keras_serializable(package='Vision')
@@ -118,11 +118,11 @@ class BASNet_En(tf.keras.Model):
       x = self._block_group(
           inputs=x,
           filters=spec[1],
-          strides=(1 if i == 0 else 2),
+          strides=spec[2],
           block_fn=block_fn,
-          block_repeats=spec[2],
+          block_repeats=spec[3],
           name='block_group_l{}'.format(i + 2))
-      if i == 3 or i == 4:
+      if i == 4 or i == 5:
         x = layers.MaxPool2D(pool_size=2, strides=2, padding='same')(x)
       endpoints[str(i)] = x
 
@@ -154,7 +154,7 @@ class BASNet_En(tf.keras.Model):
     x = block_fn(
         filters=filters,
         strides=strides,
-        use_projection=False,
+        use_projection=True,
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer,
