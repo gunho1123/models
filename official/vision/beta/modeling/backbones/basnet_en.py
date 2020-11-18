@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Encoder of BASNet.
+"""BASNet Encoder
 
 Boundary-Awar network (BASNet) were proposed in:
 [1] Qin, Xuebin, et al. 
@@ -33,7 +33,7 @@ layers = tf.keras.layers
 # (block_fn, num_filters, stride, block_repeats)
 
 BASNET_EN_SPECS = [
-        ('residual', 64,  1, 3),    #ResNet-34
+        ('residual', 64,  1, 3),   #ResNet-34
         ('residual', 128, 2, 4),   #ResNet-34
         ('residual', 256, 2, 6),   #ResNet-34
         ('residual', 512, 2, 3),   #ResNet-34
@@ -98,13 +98,14 @@ class BASNet_En(tf.keras.Model):
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)(
             inputs)
+
     x = self._norm(
         axis=bn_axis, momentum=norm_momentum, epsilon=norm_epsilon)(
             x)
     x = tf_utils.get_activation(activation)(x)
     # (gunho) for BASNet
     #x = layers.MaxPool2D(pool_size=3, strides=2, padding='same')(x)
-
+    
 
     endpoints = {}
 
@@ -188,3 +189,28 @@ class BASNet_En(tf.keras.Model):
   def output_specs(self):
     """A dict of {level: TensorShape} pairs for the model output."""
     return self._output_specs
+
+
+
+
+@factory.register_backbone_builder('basnet_en')
+def build_basnet_en(
+    input_specs: tf.keras.layers.InputSpec,
+    model_config,
+    l2_regularizer: tf.keras.regularizers.Regularizer = None) -> tf.keras.Model:
+  """Builds BASNet Encoder backbone from a config."""
+  backbone_type = model_config.backbone.type
+  backbone_cfg = model_config.backbone.get()
+  norm_activation_config = model_config.norm_activation #in /beta/configs/semantic_segmentation.py
+  assert backbone_type == 'basnet_en', (f'Inconsistent backbone type '
+                                             f'{backbone_type}')
+
+  return BASNet_En(
+      #model_id=backbone_cfg.model_id,
+      #output_stride=backbone_cfg.output_stride,
+      input_specs=input_specs,
+      activation=norm_activation_config.activation,
+      use_sync_bn=norm_activation_config.use_sync_bn,
+      norm_momentum=norm_activation_config.norm_momentum,
+      norm_epsilon=norm_activation_config.norm_epsilon,
+      kernel_regularizer=l2_regularizer)

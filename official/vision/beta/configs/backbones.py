@@ -64,6 +64,11 @@ class RevNet(hyperparams.Config):
   # Specifies the depth of RevNet.
   model_id: int = 56
 
+@dataclasses.dataclass
+class BASNet_En(hyperparams.Config):
+  """BASNet Encoder config."""
+  model_id: str = 'BASNet_En'
+
 
 @dataclasses.dataclass
 class Backbone(hyperparams.OneOfConfig):
@@ -84,4 +89,5 @@ class Backbone(hyperparams.OneOfConfig):
   revnet: RevNet = RevNet()
   efficientnet: EfficientNet = EfficientNet()
   spinenet: SpineNet = SpineNet()
+  basnet_en: BASNet_En = BASNet_En()
   mobilenet: MobileNet = MobileNet()
