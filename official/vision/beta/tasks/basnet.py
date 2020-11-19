@@ -28,12 +28,12 @@ from official.vision.beta.losses import basnet_losses
 from official.vision.beta.modeling import factory
 
 
-@task_factory.register_task_cls(exp_cfg.ImageSegmentationTask)
-class ImageSegmentationTask(base_task.Task):
-  """A task for image classification."""
+@task_factory.register_task_cls(exp_cfg.BASNetTask)
+class BASNetTask(base_task.Task):
+  """A task for basnet."""
 
   def build_model(self):
-    """Builds classification model."""
+    """Builds basnet model."""
     input_specs = tf.keras.layers.InputSpec(
         shape=[None] + self.task_config.model.input_size)
 
@@ -44,7 +44,7 @@ class ImageSegmentationTask(base_task.Task):
     l2_regularizer = (tf.keras.regularizers.l2(
         l2_weight_decay / 2.0) if l2_weight_decay else None)
 
-    model = factory.build_segmentation_model(
+    model = factory.build_basnet_model(
         input_specs=input_specs,
         model_config=self.task_config.model,
         l2_regularizer=l2_regularizer)
@@ -79,19 +79,19 @@ class ImageSegmentationTask(base_task.Task):
                  ckpt_dir_or_file)
 
   def build_inputs(self, params, input_context=None):
-    """Builds classification input."""
+    """Builds BASNet input."""
 
     input_size = self.task_config.model.input_size
-    ignore_label = self.task_config.losses.ignore_label
+    #ignore_label = self.task_config.losses.ignore_label
 
-    decoder = segmentation_input.Decoder()
-    parser = segmentation_input.Parser(
+    decoder = basnet_input.Decoder()
+    parser = basnet_input.Parser(
         output_size=input_size[:2],
-        ignore_label=ignore_label,
+        #ignore_label=ignore_label,
         resize_eval_groundtruth=params.resize_eval_groundtruth,
         groundtruth_padded_size=params.groundtruth_padded_size,
-        aug_scale_min=params.aug_scale_min,
-        aug_scale_max=params.aug_scale_max,
+        #aug_scale_min=params.aug_scale_min,
+        #aug_scale_max=params.aug_scale_max,
         dtype=params.dtype)
 
     reader = input_reader.InputReader(
@@ -116,13 +116,13 @@ class ImageSegmentationTask(base_task.Task):
       The total loss tensor.
     """
     loss_params = self._task_config.losses
-    segmentation_loss_fn = segmentation_losses.SegmentationLoss(
+    basnet_loss_fn = basnet_losses.BASNetLoss(
         loss_params.label_smoothing,
         loss_params.class_weights,
         loss_params.ignore_label,
         use_groundtruth_dimension=loss_params.use_groundtruth_dimension)
 
-    total_loss = segmentation_loss_fn(model_outputs, labels['masks'])
+    total_loss = basnet_loss_fn(model_outputs, labels['masks']) # Labels?
 
     if aux_losses:
       total_loss += tf.add_n(aux_losses)

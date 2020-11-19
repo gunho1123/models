@@ -122,10 +122,10 @@ def basnet_duts() -> cfg.ExperimentConfig:
               input_size=[256, 256, 3],   # Resize to 256, 256
               backbone=backbones.Backbone(
                   type='basnet_en', basnet_en=backbones.BASNet_En(
-                      ),
+                      )),
               decoder=decoders.Decoder(
                   type='basnet_de', basnet_de=decoders.BASNet_De(
-                      ),
+                      )),
               #head=BASNetHead(level=3, num_convs=0),
               norm_activation=common.NormActivation(
                   activation='relu',

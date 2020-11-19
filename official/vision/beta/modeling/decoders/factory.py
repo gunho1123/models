@@ -63,7 +63,15 @@ def build_decoder(input_specs,
         norm_epsilon=norm_activation_config.norm_epsilon,
         activation=norm_activation_config.activation,
         kernel_regularizer=l2_regularizer)
-  else:
+  elif decoder_type == 'basnet_de':
+    decoder = decoders.BASNet_De(
+        input_specs=input_specs,
+        use_sync_bn=norm_activation_config.use_sync_bn,
+        norm_momentum=norm_activation_config.norm_momentum,
+        norm_epsilon=norm_activation_config.norm_epsilon,
+        activation=norm_activation_config.activation,
+        kernel_regularizer=l2_regularizer)
+   else:
     raise ValueError('Decoder {!r} not implement'.format(decoder_type))
 
   return decoder
