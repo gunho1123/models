@@ -31,23 +31,69 @@ import dataclasses
 layers = tf.keras.layers
 
 
-"""
+
+def random_crop_and_pad_image_and_mask(image, mask, size):
+  """Randomly crops `image` together with `mask`.
+
+  Args:
+    image: A Tensor with shape [D_1, ..., D_K, N]
+    mask: A Tensor with shape [D_1, ..., D_K, M]
+    size: A Tensor with shape [H, W] indicating the crop size.
+  Returns:
+    A tuple of (cropped_image, cropped_mask).
+  """
+  combined = tf.concat([image, mask], axis=2)
+  image_shape = tf.shape(image)
+  combined_pad = tf.image.pad_to_bounding_box(
+      combined, 0, 0,
+      tf.maximum(size[0], image_shape[0]),
+      tf.maximum(size[1], image_shape[1]))
+  last_mask_dim = tf.shape(mask)[-1]
+  last_image_dim = tf.shape(image)[-1]
+  combined_crop = tf.image.random_crop(
+      combined_pad,
+      size=tf.concat([size, [last_mask_dim + last_image_dim]],
+                     axis=0))
+  return (combined_crop[:, :, :last_image_dim],
+          combined_crop[:, :, last_image_dim:])
+
+
+
+
+
+
 
 image = np.array(Image.open("./image.jpg"))
 image = tf.convert_to_tensor(image)
-#image = tf.image.resize(image, [256, 256])
-image = tf.image.resize(image, [224, 224])
+#print("image")
+#print(image)
+#print(image.shape)
+
+image = tf.image.resize(image, [256, 256])
 #image = tf.image.random_crop(image, [224, 224, 3])
-image = tf.reshape(image, [1, 224, 224, 3])
+#image = tf.reshape(image, [1, 224, 224, 3])
 
 label = np.array(Image.open("./mask.png"))
 label = tf.convert_to_tensor(label)
-label = tf.reshape(label, [300, 400, 1])
-label = tf.image.resize(label, [224, 224])
-label = tf.reshape(label, [1, 224, 224, 1])
 
-#pil_img = tf.keras.preprocessing.image.array_to_img(image)
-#pil_img.show()
+
+label = tf.reshape(label, [label.shape[0], label.shape[1], 1])
+label = tf.image.resize(label, [256, 256])
+
+
+image, label = random_crop_and_pad_image_and_mask(image, label, [224, 224])
+print("CROPPPPPP")
+print(image)
+print(label)
+
+pil_img1 = tf.keras.preprocessing.image.array_to_img(image)
+pil_img2 = tf.keras.preprocessing.image.array_to_img(label)
+
+#Image.fromarray(np.hstack((np.array(pil_img1),np.array(pil_img2)))).show()
+pil_img1.show()
+pil_img2.show()
+
+
 
 
 image = image/255
@@ -59,7 +105,6 @@ label = label/255
 
 #print(label)
 
-"""
 
 input_size = 224
 tf.keras.backend.set_image_data_format('channels_last')
@@ -123,14 +168,6 @@ outputs = np.array(outputs)
 
 outputs = tf.squeeze(outputs, axis=1)
 
-
-#outputs = outputs.numpy()
-#np.save("outputs", arr=outputs)
-"""
-outputs = np.load(file="outputs.npy")
-outputs = tf.convert_to_tensor(outputs)
-"""
-#print(outputs)
 
 loss_fn = basnet_losses.BASNetLoss(
     0.1,

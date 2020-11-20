@@ -1,0 +1,14 @@
+runtime:
+  distribution_strategy: 'mirrored'
+  mixed_precision_dtype: 'float16'
+  num_gpus: 8
+task:
+  model:
+    backbone:
+      type: 'basnet_en'
+      basnet_en:
+        model_id: 'BASNet_En'
+    norm_activation:
+      activation: 'relu'
+  init_checkpoint: ''
+  init_checkpoint_modules: ''

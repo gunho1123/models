@@ -1,2 +1,2 @@
-python3 --experiment=XXXX --mode=train --model_dir=/tmp/test --config_file=official/vision/beta/configs/experiments/XXX/XXX.yaml
+python3 train.py --experiment=basnet_duts --mode=train --model_dir=/tmp/test --config_file=official/vision/beta/configs/experiments/basnet/basnet_dut_gpu.yaml
 

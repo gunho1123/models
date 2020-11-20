@@ -43,6 +43,10 @@ class ASPP(hyperparams.Config):
   dropout_rate: float = 0.0
   num_filters: int = 256
 
+@dataclasses.dataclass
+class BASNet_De(hyperparams.Config):
+  """BASNet_De config."""
+  use_separable_conv: bool = False
 
 @dataclasses.dataclass
 class Decoder(hyperparams.OneOfConfig):
@@ -56,3 +60,4 @@ class Decoder(hyperparams.OneOfConfig):
   fpn: FPN = FPN()
   identity: Identity = Identity()
   aspp: ASPP = ASPP()
+  basnet_de: BASNet_De = BASNet_De()

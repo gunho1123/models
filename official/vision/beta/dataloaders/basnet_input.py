@@ -28,7 +28,7 @@ class Decoder(decoder.Decoder):
         'image/encoded': tf.io.FixedLenFeature((), tf.string, default_value=''),
         'image/height': tf.io.FixedLenFeature((), tf.int64, default_value=0),
         'image/width': tf.io.FixedLenFeature((), tf.int64, default_value=0),
-        'image/basnet/class/encoded':
+        'image/segmentation/class/encoded':
             tf.io.FixedLenFeature((), tf.string, default_value='')
     }
 
@@ -42,9 +42,7 @@ class Parser(parser.Parser):
 
   def __init__(self,
                output_size,
-               resize_eval_groundtruth=True,
                groundtruth_padded_size=None,
-               ignore_label=255,
                aug_rand_hflip=False,
                aug_scale_min=1.0,
                aug_scale_max=1.0,
@@ -71,11 +69,10 @@ class Parser(parser.Parser):
     """
     self._output_size = output_size
     self._resize_eval_groundtruth = resize_eval_groundtruth
-    if (not resize_eval_groundtruth) and (groundtruth_padded_size is None):
+    if groundtruth_padded_size is None:
       raise ValueError('groundtruth_padded_size ([height, width]) needs to be'
                        'specified when resize_eval_groundtruth is False.')
     self._groundtruth_padded_size = groundtruth_padded_size
-    self._ignore_label = ignore_label
 
     # Data augmentation.
     self._aug_rand_hflip = aug_rand_hflip
@@ -88,7 +85,7 @@ class Parser(parser.Parser):
   def _prepare_image_and_label(self, data):
     """Prepare normalized image and label."""
     image = tf.io.decode_image(data['image/encoded'], channels=3)
-    label = tf.io.decode_image(data['image/basnet/class/encoded'],
+    label = tf.io.decode_image(data['image/segmentation/class/encoded'],
                                channels=1)
     height = data['image/height']
     width = data['image/width']
@@ -108,6 +105,16 @@ class Parser(parser.Parser):
     if self._aug_rand_hflip:
       image, label = preprocess_ops.random_horizontal_flip(image, masks=label)
 
+
+
+    # (gunho) implement custom resize and random crop functions
+    image = tf.image.resize(image, tf.cast(output_size, tf.int32))
+
+    label = tf.image.resize(label, tf.cast(output_size, tf.int32))
+
+    image, label = random_crop_and_pad_image_and_mask(image, label, [224, 224])
+
+    """
     # Resizes and crops image.
     image, image_info = preprocess_ops.resize_and_crop_image(
         image,
@@ -136,11 +143,11 @@ class Parser(parser.Parser):
         'valid_masks': valid_mask,
         'image_info': image_info,
     }
-
+    """
     # Cast image as self._dtype
     image = tf.cast(image, dtype=self._dtype)
 
-    return image, labels
+    return image, label
 
   def _parse_eval_data(self, data):
     """Parses data for training and evaluation."""

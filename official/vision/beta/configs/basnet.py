@@ -58,7 +58,7 @@ class BASNetModel(hyperparams.Config):
   #max_level: int = 6
   #head: BASNetHead = BASNetHead()
   backbone: backbones.Backbone = backbones.Backbone(
-      type='basnet', basnet=backbones.BASNet_En())
+      type='basnet_en', basnet_en=backbones.BASNet_En())
   decoder: decoders.Decoder = decoders.Decoder(type='identity')
   norm_activation: common.NormActivation = common.NormActivation()
 
@@ -104,7 +104,7 @@ def basnet() -> cfg.ExperimentConfig:
 # DUTS Dataset
 DUTS_TRAIN_EXAMPLES = 10553
 DUTS_VAL_EXAMPLES = 5019
-DUTS_INPUT_PATH_BASE = 'DUTS-TR-Image' # ???????????
+DUTS_INPUT_PATH_BASE = '/data/DUTS_TR_TFRecords/'
 
 
 
@@ -135,24 +135,14 @@ def basnet_duts() -> cfg.ExperimentConfig:
           losses=Losses(l2_weight_decay=1e-4),
           train_data=DataConfig(
               #input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'train_aug*'), # Dataset Path ###########
-              input_path=os.path.join(DUTS_INPUT_PATH_BASE, 'DUTS???'), # Dataset Path ###########
+              input_path=os.path.join(DUTS_INPUT_PATH_BASE, 'DUTS-TR-*'), # Dataset Path ###########
               is_training=True,
               global_batch_size=train_batch_size,
               #aug_scale_min=0.5,
               #aug_scale_max=2.0
           ),
           # No validation for BASNet
-          """
-          validation_data=DataConfig(
-              input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'val*'),
-              is_training=False,
-              global_batch_size=eval_batch_size,
-              resize_eval_groundtruth=False,
-              groundtruth_padded_size=[512, 512]),
-          """
-          # resnet50 
-          # TODO (gunho) need to change it to resnet34 for BASNet
-          init_checkpoint='gs://cloud-tpu-checkpoints/vision-2.0/deeplab/deeplab_resnet50_imagenet/ckpt-62400',
+          init_checkpoint='',
           init_checkpoint_modules='backbone'),
       trainer=cfg.TrainerConfig(
           steps_per_loop=steps_per_epoch,
@@ -175,16 +165,7 @@ def basnet_duts() -> cfg.ExperimentConfig:
                   'polynomial': {
                       'initial_learning_rate': 0.001
                   }
-              }
-              """
-              'warmup': {
-                  'type': 'linear',
-                  'linear': {
-                      'warmup_steps': 5 * steps_per_epoch,
-                      'warmup_learning_rate': 0
-                  }
-              }
-              """
+              },
           })),
       restrictions=[
           'task.train_data.is_training != None',
