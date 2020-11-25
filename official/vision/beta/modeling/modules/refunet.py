@@ -164,6 +164,10 @@ class RefUnet(tf.keras.Model):
 
     output = x + residual
 
+    output = layers.Activation(
+        activation='sigmoid'
+        )(output)
+
     #self._output_specs = {l: endpoints[l].get_shape() for l in endpoints}
     self._output_specs = {'0': output.get_shape()}
 

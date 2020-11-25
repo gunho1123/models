@@ -30,9 +30,12 @@ class BASNetLoss:
     self._ignore_label = ignore_label
     self._use_groundtruth_dimension = use_groundtruth_dimension
     self._label_smoothing = label_smoothing
+    self._binary_crossentropy = tf.keras.losses.BinaryCrossentropy(
+        reduction=tf.keras.losses.Reduction.SUM, from_logits=True)
+    #self._ssim = tf.image.ssim_multiscale()
 
   def __call__(self, logits, labels):
-    _, height, width, num_classes = logits.get_shape().as_list()
+    #_, height, width, num_classes = logits.get_shape().as_list()
     """
     if self._use_groundtruth_dimension:
       # TODO(arashwan): Test using align corners to match deeplab alignment.
@@ -45,9 +48,37 @@ class BASNetLoss:
           method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     """
 
+    #print("TEST_label_shape")
+    #print(labels.get_shape()) # [8, 244, 244, None]
+    
+    #total_bce_loss = 0
+    #total_ssim_loss = 0
+    #total_iou_loss = 0
+    
+
+    levels = sorted(logits.keys())
+    
     labels = tf.cast(labels, tf.float32)
-    labels = tf.repeat(labels, logits.get_shape()[0], axis=0)
-    #print(labels.get_shape())
+    bce_losses = []
+    """
+    for level in levels:
+      bce_losses.append(
+          tf.keras.losses.binary_crossentropy(
+              labels,
+              logits[level],
+              from_logits=True
+          ))
+    """
+    for level in levels:
+      bce_losses.append(
+          self._bce_loss(
+              logits[level],
+              labels))
+    #total_bce_loss = tf.math.add_n(bce_losses)
+    return tf.math.add_n(bce_losses)
+    
+
+    """
     bce = tf.keras.losses.BinaryCrossentropy()
     bce_loss = []
     for logit, label in zip(logits, labels):
@@ -77,8 +108,9 @@ class BASNetLoss:
 
     print("total_iou_loss")
     print(total_iou_loss)
-
-    loss = total_bce_loss + total_ssim_loss + total_iou_loss
+    """
+    #loss = total_bce_loss + total_ssim_loss + total_iou_loss
+    #loss = total_bce_loss
  
     """
     valid_mask = tf.not_equal(labels, self._ignore_label) #_ignore_label = 255, white : object = 0 & background = 1
@@ -115,4 +147,16 @@ class BASNetLoss:
     loss = tf.reduce_sum(cross_entropy_loss) / normalizer
     """
 
-    return loss
+    #return loss
+
+  def _bce_loss(self, logits, labels, normalizer=1.0):
+    """Computes binary crossentropy loss."""
+    with tf.name_scope('bce_loss'):
+      bce_loss = self._binary_crossentropy(labels, logits)
+      bce_loss /= normalizer
+      return bce_loss
+
+
+
+
+

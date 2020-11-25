@@ -92,6 +92,11 @@ class ConvBNReLU(tf.keras.layers.Layer):
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)
  
+    self._bn1 = self._norm(
+        axis=self._bn_axis,
+        momentum=self._norm_momentum,
+        epsilon=self._norm_epsilon        
+        )
     super(ConvBNReLU, self).build(input_shape)
 
   def get_config(self):
@@ -114,11 +119,14 @@ class ConvBNReLU(tf.keras.layers.Layer):
 
   def call(self, inputs):
     x = self._conv1(inputs)
+    """
     x = self._norm(
         axis=self._bn_axis,
         momentum=self._norm_momentum,
         epsilon=self._norm_epsilon        
         )(x)
+    """
+    x = self._bn1(x)
     x = self._activation_fn(x)
 
     return x

@@ -42,6 +42,7 @@ class Parser(parser.Parser):
 
   def __init__(self,
                output_size,
+               resize_eval_groundtruth=None,
                groundtruth_padded_size=None,
                aug_rand_hflip=False,
                aug_scale_min=1.0,
@@ -108,11 +109,11 @@ class Parser(parser.Parser):
 
 
     # (gunho) implement custom resize and random crop functions
-    image = tf.image.resize(image, tf.cast(output_size, tf.int32))
+    image = tf.image.resize(image, tf.cast([256, 256], tf.int32))
 
-    label = tf.image.resize(label, tf.cast(output_size, tf.int32))
+    label = tf.image.resize(label, tf.cast([256, 256], tf.int32))
 
-    image, label = random_crop_and_pad_image_and_mask(image, label, [224, 224])
+    image, label = preprocess_ops.random_crop_and_pad_image_and_mask(image, label, self._output_size)
 
     """
     # Resizes and crops image.

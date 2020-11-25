@@ -65,8 +65,8 @@ class BASNetModel(hyperparams.Config):
 
 @dataclasses.dataclass
 class Losses(hyperparams.Config):
-  #label_smoothing: float = 0.1
-  #ignore_label: int = 255
+  label_smoothing: float = 0.1
+  ignore_label: int = 255
   class_weights: List[float] = dataclasses.field(default_factory=list)
   l2_weight_decay: float = 0.0
   use_groundtruth_dimension: bool = True
@@ -79,7 +79,7 @@ class BASNetTask(cfg.TaskConfig):
   train_data: DataConfig = DataConfig(is_training=True)
   #validation_data: DataConfig = DataConfig(is_training=False)
   losses: Losses = Losses()
-  #gradient_clip_norm: float = 0.0
+  gradient_clip_norm: float = 0.0
   init_checkpoint: Optional[str] = None
   init_checkpoint_modules: Union[
       str, List[str]] = 'all'  # all, backbone, and/or decoder
@@ -119,7 +119,7 @@ def basnet_duts() -> cfg.ExperimentConfig:
           model=BASNetModel(
               #num_classes=21,
               # TODO(arashwan): test changing size to 513 to match deeplab.
-              input_size=[256, 256, 3],   # Resize to 256, 256
+              input_size=[224, 224, 3],   # Resize to 256, 256
               backbone=backbones.Backbone(
                   type='basnet_en', basnet_en=backbones.BASNet_En(
                       )),
@@ -142,8 +142,9 @@ def basnet_duts() -> cfg.ExperimentConfig:
               #aug_scale_max=2.0
           ),
           # No validation for BASNet
-          init_checkpoint='',
-          init_checkpoint_modules='backbone'),
+          #init_checkpoint='',
+          #init_checkpoint_modules='backbone'
+      ),
       trainer=cfg.TrainerConfig(
           steps_per_loop=steps_per_epoch,
           summary_interval=steps_per_epoch,
@@ -157,19 +158,22 @@ def basnet_duts() -> cfg.ExperimentConfig:
                   'adam': {
                       'beta_1': 0.9,
                       'beta_2': 0.999,
-                      'epsilon': 1e-8,
+                      'epsilon': 1e-7,
                   }
               },
               'learning_rate': {
                   'type': 'polynomial',
                   'polynomial': {
-                      'initial_learning_rate': 0.001
+                      'initial_learning_rate': 0.001,
+                      'decay_steps': 45 * steps_per_epoch,
+                      'end_learning_rate': 0.0,
+                      'power': 0.9,
+
                   }
               },
           })),
       restrictions=[
-          'task.train_data.is_training != None',
-          'task.validation_data.is_training != None'
+          'task.train_data.is_training != None'
+          #'task.validation_data.is_training != None'
       ])
-
   return config

@@ -33,6 +33,7 @@ from official.vision.beta.modeling.decoders import factory as decoder_factory
 from official.vision.beta.modeling.heads import dense_prediction_heads
 from official.vision.beta.modeling.heads import instance_heads
 from official.vision.beta.modeling.heads import segmentation_heads
+from official.vision.beta.modeling.modules import refunet
 from official.vision.beta.modeling.layers import detection_generator
 from official.vision.beta.modeling.layers import mask_sampler
 from official.vision.beta.modeling.layers import roi_aligner
@@ -290,6 +291,8 @@ def build_basnet_model(
       model_config=model_config,
       l2_regularizer=l2_regularizer)
 
+  refinement = refunet.RefUnet()
+
   #head_config = model_config.head
   norm_activation_config = model_config.norm_activation
   """
@@ -305,6 +308,5 @@ def build_basnet_model(
       norm_epsilon=norm_activation_config.norm_epsilon,
       kernel_regularizer=l2_regularizer)
   """
-  model = basnet_model.BASNetModel(backbone, decoder)
-  #model = basnet_model.BASNetModel(backbone, decoder, refinement)
+  model = basnet_model.BASNetModel(backbone, decoder, refinement)
   return model

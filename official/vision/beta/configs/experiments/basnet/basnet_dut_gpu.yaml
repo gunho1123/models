@@ -1,7 +1,9 @@
 runtime:
-  distribution_strategy: 'mirrored'
-  mixed_precision_dtype: 'float16'
-  num_gpus: 8
+  distribution_strategy: 'one_device'
+  #distribution_strategy: 'multi_worker_mirrored'
+  #distribution_strategy: 'mirrored'
+  mixed_precision_dtype: 'float32'
+  num_gpus: 1
 task:
   model:
     backbone:

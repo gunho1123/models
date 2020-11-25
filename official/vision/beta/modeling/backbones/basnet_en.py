@@ -127,7 +127,6 @@ class BASNet_En(tf.keras.Model):
       if i == 4 or i == 5:
         x = layers.MaxPool2D(pool_size=2, strides=2, padding='same')(x)
       endpoints[str(i)] = x
-
     self._output_specs = {l: endpoints[l].get_shape() for l in endpoints}
 
     super(BASNet_En, self).__init__(inputs=inputs, outputs=endpoints, **kwargs)

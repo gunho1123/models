@@ -23,7 +23,7 @@ from official.core import input_reader
 from official.core import task_factory
 from official.vision.beta.configs import basnet as exp_cfg
 from official.vision.beta.dataloaders import basnet_input # Prepare input datas
-#from official.vision.beta.evaluation import segmentation_metrics
+from official.vision.beta.evaluation import segmentation_metrics
 from official.vision.beta.losses import basnet_losses
 from official.vision.beta.modeling import factory
 
@@ -104,11 +104,11 @@ class BASNetTask(base_task.Task):
 
     return dataset
 
-  def build_losses(self, labels, model_outputs, aux_losses=None):
+  def build_losses(self, label, model_outputs, aux_losses=None):
     """Sparse categorical cross entropy loss.
 
     Args:
-      labels: labels.
+      label: label.
       model_outputs: Output logits of the classifier.
       aux_losses: auxiliarly loss tensors, i.e. `losses` in keras.Model.
 
@@ -122,7 +122,7 @@ class BASNetTask(base_task.Task):
         loss_params.ignore_label,
         use_groundtruth_dimension=loss_params.use_groundtruth_dimension)
 
-    total_loss = basnet_loss_fn(model_outputs, labels['masks']) # Labels?
+    total_loss = basnet_loss_fn(model_outputs, label)
 
     if aux_losses:
       total_loss += tf.add_n(aux_losses)
@@ -132,7 +132,9 @@ class BASNetTask(base_task.Task):
   def build_metrics(self, training=True):
     """Gets streaming metrics for training/validation."""
     metrics = []
+    """
     if training:
+      _ = 0
       # TODO(arashwan): make MeanIoU tpu friendly.
       if not isinstance(tf.distribute.get_strategy(),
                         tf.distribute.experimental.TPUStrategy):
@@ -146,7 +148,7 @@ class BASNetTask(base_task.Task):
           num_classes=self.task_config.model.num_classes,
           rescale_predictions=not self.task_config.validation_data
           .resize_eval_groundtruth)
-
+    """
     return metrics
 
   def train_step(self, inputs, model, optimizer, metrics=None):
@@ -165,6 +167,8 @@ class BASNetTask(base_task.Task):
     num_replicas = tf.distribute.get_strategy().num_replicas_in_sync
     with tf.GradientTape() as tape:
       outputs = model(features, training=True)
+      #print("outputs")
+      #print(outputs)
       # Casting output layer as float32 is necessary when mixed_precision is
       # mixed_float16 or mixed_bfloat16 to ensure output is casted as float32.
       outputs = tf.nest.map_structure(
@@ -172,7 +176,8 @@ class BASNetTask(base_task.Task):
 
       # Computes per-replica loss.
       loss = self.build_losses(
-          model_outputs=outputs, labels=labels, aux_losses=model.losses)
+          model_outputs=outputs, label=labels, aux_losses=model.losses)
+
       # Scales loss as the default gradients allreduce performs sum inside the
       # optimizer.
       scaled_loss = loss / num_replicas
@@ -185,6 +190,7 @@ class BASNetTask(base_task.Task):
 
     tvars = model.trainable_variables
     grads = tape.gradient(scaled_loss, tvars)
+
     # Scales back gradient before apply_gradients when LossScaleOptimizer is
     # used.
     if isinstance(
@@ -196,7 +202,6 @@ class BASNetTask(base_task.Task):
       grads, _ = tf.clip_by_global_norm(
           grads, self.task_config.gradient_clip_norm)
     optimizer.apply_gradients(list(zip(grads, tvars)))
-
     logs = {self.loss: loss}
     if metrics:
       self.process_metrics(metrics, labels, outputs)
