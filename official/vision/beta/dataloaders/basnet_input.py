@@ -14,10 +14,12 @@
 # ==============================================================================
 """Data parser and processing for segmentation datasets."""
 
+import numpy as np
 import tensorflow as tf
 from official.vision.beta.dataloaders import decoder
 from official.vision.beta.dataloaders import parser
 from official.vision.beta.ops import preprocess_ops
+
 
 
 class Decoder(decoder.Decoder):
@@ -92,10 +94,30 @@ class Parser(parser.Parser):
     width = data['image/width']
     image = tf.reshape(image, (height, width, 3))
 
-    label = tf.reshape(label, (1, height, width))
+    #label = tf.reshape(label, (1, height, width))
+    label = tf.reshape(label, (height, width, 1))
     label = tf.cast(label, tf.float32)
     # Normalizes image with mean and std pixel values.
-    image = preprocess_ops.normalize_image(image)
+    #image = preprocess_ops.normalize_image(image)
+    
+    # change the pixels from [0,255] to [0,1]
+		# transforms.Normalize(mean = (0.485, 0.456, 0.406), std = (0.229, 0.224, 0.225))
+
+    
+    image = image/tf.math.reduce_max(image)
+    if(tf.math.reduce_max(label)<1e-6):
+      label = label
+    else:
+      label = label/tf.math.reduce_max(label)
+    """
+    tmpImg = tf.zeros_like(image)
+    tmpImg[:,:,0] = (image[:,:,0]-0.485)/0.229
+    tmpImg[:,:,1] = (image[:,:,1]-0.456)/0.224
+    tmpImg[:,:,2] = (image[:,:,2]-0.406)/0.225
+
+    image = tmpImg
+    """
+
     return image, label
 
   def _parse_train_data(self, data):

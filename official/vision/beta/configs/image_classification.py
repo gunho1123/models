@@ -79,7 +79,7 @@ def image_classification() -> cfg.ExperimentConfig:
 
 IMAGENET_TRAIN_EXAMPLES = 1281167
 IMAGENET_VAL_EXAMPLES = 50000
-IMAGENET_INPUT_PATH_BASE = 'imagenet-2012-tfrecord'
+IMAGENET_INPUT_PATH_BASE = '/dev/shm/imagenet-2012-tfrecord'
 
 
 @exp_factory.register_config_factory('resnet_imagenet')

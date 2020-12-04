@@ -59,7 +59,7 @@ class BASNetModel(hyperparams.Config):
   #head: BASNetHead = BASNetHead()
   backbone: backbones.Backbone = backbones.Backbone(
       type='basnet_en', basnet_en=backbones.BASNet_En())
-  decoder: decoders.Decoder = decoders.Decoder(type='identity')
+  decoder: decoders.Decoder = decoders.Decoder(type='basnet_de')
   norm_activation: common.NormActivation = common.NormActivation()
 
 
@@ -131,8 +131,8 @@ def basnet_duts() -> cfg.ExperimentConfig:
                   activation='relu',
                   norm_momentum=0.99,
                   norm_epsilon=1e-3,
-                  use_sync_bn=True)),
-          losses=Losses(l2_weight_decay=1e-4),
+                  use_sync_bn=False)),
+          losses=Losses(l2_weight_decay=0),
           train_data=DataConfig(
               #input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'train_aug*'), # Dataset Path ###########
               input_path=os.path.join(DUTS_INPUT_PATH_BASE, 'DUTS-TR-*'), # Dataset Path ###########
@@ -149,7 +149,7 @@ def basnet_duts() -> cfg.ExperimentConfig:
           steps_per_loop=steps_per_epoch,
           summary_interval=steps_per_epoch,
           checkpoint_interval=steps_per_epoch,
-          train_steps=45 * steps_per_epoch,
+          train_steps=270 * steps_per_epoch,  # (gunho) more epochs
           #validation_steps=PASCAL_VAL_EXAMPLES // eval_batch_size,  # No validation in BASNet
           #validation_interval=steps_per_epoch,
           optimizer_config=optimization.OptimizationConfig({
@@ -158,17 +158,13 @@ def basnet_duts() -> cfg.ExperimentConfig:
                   'adam': {
                       'beta_1': 0.9,
                       'beta_2': 0.999,
-                      'epsilon': 1e-7,
+                      'epsilon': 1e-8,
                   }
               },
               'learning_rate': {
-                  'type': 'polynomial',
-                  'polynomial': {
-                      'initial_learning_rate': 0.001,
-                      'decay_steps': 45 * steps_per_epoch,
-                      'end_learning_rate': 0.0,
-                      'power': 0.9,
-
+                  'type': 'constant',
+                  'constant': {
+                      'learning_rate': 0.001,
                   }
               },
           })),

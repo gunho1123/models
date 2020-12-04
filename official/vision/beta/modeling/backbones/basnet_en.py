@@ -31,15 +31,15 @@ layers = tf.keras.layers
 
 # Specifications for BASNet encoder.
 # Each element in the block configuration is in the following format:
-# (block_fn, num_filters, stride, block_repeats)
+# (block_fn, num_filters, stride, block_repeats, maxpool)
 
 BASNET_EN_SPECS = [
-        ('residual', 64,  1, 3),   #ResNet-34
-        ('residual', 128, 2, 4),   #ResNet-34
-        ('residual', 256, 2, 6),   #ResNet-34
-        ('residual', 512, 2, 3),   #ResNet-34
-        ('residual', 512, 1, 3),   #BASNet
-        ('residual', 512, 1, 3),   #BASNet
+        ('residual', 64,  1, 3, 0),   #ResNet-34
+        ('residual', 128, 2, 4, 0),   #ResNet-34
+        ('residual', 256, 2, 6, 0),   #ResNet-34
+        ('residual', 512, 2, 3, 1),   #ResNet-34
+        ('residual', 512, 1, 3, 1),   #BASNet
+        ('residual', 512, 1, 3, 0),   #BASNet
     ]
 
 @tf.keras.utils.register_keras_serializable(package='Vision')
@@ -124,9 +124,9 @@ class BASNet_En(tf.keras.Model):
           block_fn=block_fn,
           block_repeats=spec[3],
           name='block_group_l{}'.format(i + 2))
-      if i == 4 or i == 5:
-        x = layers.MaxPool2D(pool_size=2, strides=2, padding='same')(x)
       endpoints[str(i)] = x
+      if spec[4]:
+        x = layers.MaxPool2D(pool_size=2, strides=2, padding='same')(x)
     self._output_specs = {l: endpoints[l].get_shape() for l in endpoints}
 
     super(BASNet_En, self).__init__(inputs=inputs, outputs=endpoints, **kwargs)

@@ -32,12 +32,12 @@ layers = tf.keras.layers
 # (conv1_nf, conv1_dr, convm_nf, convm_dr, conv2_nf, conv2_dr, scale_factor, mode)
 BASNET_DE_SPECS = [
             (512, 2, 512, 2, 512, 2, 32, 'bilinear'), #Bridge(Sup0)
-            (512, 1, 512, 2, 512, 2, 32, 'bilinear'), #Sup1
-            (512, 1, 512, 1, 512, 1, 16, 'bilinear'), #Sup2
-            (512, 1, 512, 1, 256, 1, 8,  'bilinear'), #Sup3
-            (256, 1, 256, 1, 128, 1, 4,  'bilinear'), #Sup4
-            (128, 1, 128, 1, 64,  1, 2,  'bilinear'), #Sup5
-            (64,  1, 64,  1, 64,  1, 1,  'bilinear')  #Sup6
+            (512, 1, 512, 2, 512, 2, 32, 'bilinear'), #Sup1, stage6d
+            (512, 1, 512, 1, 512, 1, 16, 'bilinear'), #Sup2, stage5d
+            (512, 1, 512, 1, 256, 1, 8,  'bilinear'), #Sup3, stage4d
+            (256, 1, 256, 1, 128, 1, 4,  'bilinear'), #Sup4, stage3d
+            (128, 1, 128, 1, 64,  1, 2,  'bilinear'), #Sup5, stage2d
+            (64,  1, 64,  1, 64,  1, 1,  'bilinear')  #Sup6, stage1d
         ]
 
 @tf.keras.utils.register_keras_serializable(package='Vision')
@@ -111,7 +111,7 @@ class BASNet_De(tf.keras.Model):
       if i == 0:
         x = inputs['5']
       else:
-        x = layers.Concatenate(axis=-1)([inputs[str(6-i)], x])
+        x = layers.Concatenate(axis=-1)([x, inputs[str(6-i)]])
       for j in range(3):
         x = nn_layers.ConvBNReLU(
             filters=spec[2*j],

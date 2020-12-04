@@ -31,7 +31,7 @@ class BASNetLoss:
     self._use_groundtruth_dimension = use_groundtruth_dimension
     self._label_smoothing = label_smoothing
     self._binary_crossentropy = tf.keras.losses.BinaryCrossentropy(
-        reduction=tf.keras.losses.Reduction.SUM, from_logits=True)
+        reduction=tf.keras.losses.Reduction.SUM, from_logits=False)
     #self._ssim = tf.image.ssim_multiscale()
 
   def __call__(self, logits, labels):
