@@ -14,7 +14,7 @@
 # limitations under the License.
 # ==============================================================================
 #
-# Script to download and preprocess the PASCAL VOC 2012 dataset.
+# Script to preprocess the DUTS-TR dataset.
 #
 # Usage:
 #   bash ./convert_duts_tr.sh
@@ -22,39 +22,35 @@
 # The folder structure is assumed to be:
 #  + datasets
 #     - build_data.py
-#     - build_voc2012_data.py
-#     - download_and_convert_voc2012.sh
-#     - remove_gt_colormap.py
-#     + pascal_voc_seg
-#       + VOCdevkit
-#         + VOC2012
-#           + JPEGImages
-#           + SegmentationClass
-#
+#     - build_duts_data.py
+#     - convert_duts_tr.sh
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
 CURRENT_DIR=$(pwd)
-WORK_DIR="./duts_tr"
+WORK_DIR="./convert"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 mkdir -p "${WORK_DIR}"
 cd "${WORK_DIR}"
 
 cd "${CURRENT_DIR}"
 
-# Root path for PASCAL VOC 2012 dataset.
-DUTS_TR_ROOT="${WORK_DIR}/DUTS-TR"
+# Root path for DUTS-TR dataset.
+#DUTS_TR_ROOT="${WORK_DIR}/DUTS-TR"
+#DUTS_TR_ROOT="/home/ghpark/DUTS-TR"
+DUTS_TR_ROOT="/home/ghpark/datasets/DUTS-TR/DUTS-TR_temp"
 
 
-SEMANTIC_SEG_FOLDER="${DUTS_TR_ROOT}/DUTS-TR-Mask"
+#SEMANTIC_SEG_FOLDER="${DUTS_TR_ROOT}/DUTS-TR-Mask"
+SEMANTIC_SEG_FOLDER="${DUTS_TR_ROOT}/DUTS-TR-Mask-Flip"
 
 # Build TFRecords of the dataset.
 # First, create output directory for storing TFRecords.
 OUTPUT_DIR="${WORK_DIR}/tfrecord"
 mkdir -p "${OUTPUT_DIR}"
 
-IMAGE_FOLDER="${DUTS_TR_ROOT}/DUTS-TR-Image"
+IMAGE_FOLDER="${DUTS_TR_ROOT}/DUTS-TR-Image-Flip"
 
 echo "Converting DUTS-TR dataset..."
 python3 "${SCRIPT_DIR}/build_duts_data.py" \

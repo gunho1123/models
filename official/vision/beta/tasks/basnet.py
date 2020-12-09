@@ -90,6 +90,7 @@ class BASNetTask(base_task.Task):
         #ignore_label=ignore_label,
         resize_eval_groundtruth=params.resize_eval_groundtruth,
         groundtruth_padded_size=params.groundtruth_padded_size,
+        aug_rand_hflip=False,
         #aug_scale_min=params.aug_scale_min,
         #aug_scale_max=params.aug_scale_max,
         dtype=params.dtype)

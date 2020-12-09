@@ -93,30 +93,15 @@ class Parser(parser.Parser):
     height = data['image/height']
     width = data['image/width']
     image = tf.reshape(image, (height, width, 3))
-
-    #label = tf.reshape(label, (1, height, width))
+    
     label = tf.reshape(label, (height, width, 1))
     label = tf.cast(label, tf.float32)
-    # Normalizes image with mean and std pixel values.
-    #image = preprocess_ops.normalize_image(image)
-    
-    # change the pixels from [0,255] to [0,1]
-		# transforms.Normalize(mean = (0.485, 0.456, 0.406), std = (0.229, 0.224, 0.225))
 
+    # (gunho) simply normalize the pixels from [0,255] to [0,1]
+    image = image/tf.reduce_max(image)
+    label = label/tf.reduce_max(label)
     
-    image = image/tf.math.reduce_max(image)
-    if(tf.math.reduce_max(label)<1e-6):
-      label = label
-    else:
-      label = label/tf.math.reduce_max(label)
-    """
-    tmpImg = tf.zeros_like(image)
-    tmpImg[:,:,0] = (image[:,:,0]-0.485)/0.229
-    tmpImg[:,:,1] = (image[:,:,1]-0.456)/0.224
-    tmpImg[:,:,2] = (image[:,:,2]-0.406)/0.225
-
-    image = tmpImg
-    """
+    image = preprocess_ops.normalize_image(image)
 
     return image, label
 
@@ -130,43 +115,16 @@ class Parser(parser.Parser):
 
 
 
-    # (gunho) implement custom resize and random crop functions
     image = tf.image.resize(image, tf.cast([256, 256], tf.int32))
-
     label = tf.image.resize(label, tf.cast([256, 256], tf.int32))
 
-    image, label = preprocess_ops.random_crop_and_pad_image_and_mask(image, label, self._output_size)
-
-    """
-    # Resizes and crops image.
-    image, image_info = preprocess_ops.resize_and_crop_image(
-        image,
-        self._output_size,
-        self._output_size,
-        aug_scale_min=self._aug_scale_min,
-        aug_scale_max=self._aug_scale_max)
-
-    # Resizes and crops boxes.
-    image_scale = image_info[2, :]
-    offset = image_info[3, :]
-
-    # Pad label and make sure the padded region assigned to the ignore label.
-    # The label is first offset by +1 and then padded with 0.
-    label += 1
-    label = tf.expand_dims(label, axis=3)
-    label = preprocess_ops.resize_and_crop_masks(
-        label, image_scale, self._output_size, offset)
-    label -= 1
-    label = tf.where(tf.equal(label, -1),
-                     self._ignore_label * tf.ones_like(label), label)
-    label = tf.squeeze(label, axis=0)
-    valid_mask = tf.not_equal(label, self._ignore_label)
-    labels = {
-        'masks': label,
-        'valid_masks': valid_mask,
-        'image_info': image_info,
-    }
-    """
+    # (gunho) random crop both image and mask
+    image_mask = tf.concat([image, label], axis=2)
+    image_mask_crop = tf.image.random_crop(image_mask,
+                                           self._output_size + [4])
+    image = image_mask_crop[:, :, :-1]
+    label = image_mask_crop[:, :,-1]
+    
     # Cast image as self._dtype
     image = tf.cast(image, dtype=self._dtype)
 
@@ -175,39 +133,23 @@ class Parser(parser.Parser):
   def _parse_eval_data(self, data):
     """Parses data for training and evaluation."""
     image, label = self._prepare_image_and_label(data)
-    # The label is first offset by +1 and then padded with 0.
-    label += 1
-    label = tf.expand_dims(label, axis=3)
+    # Flips image randomly during training.
+    if self._aug_rand_hflip:
+      image, label = preprocess_ops.random_horizontal_flip(image, masks=label)
 
-    # Resizes and crops image.
-    image, image_info = preprocess_ops.resize_and_crop_image(
-        image, self._output_size, self._output_size)
 
-    if self._resize_eval_groundtruth:
-      # Resizes eval masks to match input image sizes. In that case, mean IoU
-      # is computed on output_size not the original size of the images.
-      image_scale = image_info[2, :]
-      offset = image_info[3, :]
-      label = preprocess_ops.resize_and_crop_masks(label, image_scale,
-                                                   self._output_size, offset)
-    else:
-      label = tf.image.pad_to_bounding_box(
-          label, 0, 0, self._groundtruth_padded_size[0],
-          self._groundtruth_padded_size[1])
 
-    label -= 1
-    label = tf.where(tf.equal(label, -1),
-                     self._ignore_label * tf.ones_like(label), label)
-    label = tf.squeeze(label, axis=0)
+    image = tf.image.resize(image, tf.cast([256, 256], tf.int32))
+    label = tf.image.resize(label, tf.cast([256, 256], tf.int32))
 
-    valid_mask = tf.not_equal(label, self._ignore_label)
-    labels = {
-        'masks': label,
-        'valid_masks': valid_mask,
-        'image_info': image_info
-    }
-
+    # (gunho) random crop both image and mask
+    image_mask = tf.concat([image, label], axis=2)
+    image_mask_crop = tf.image.random_crop(image_mask,
+                                           self._output_size + [4])
+    image = image_mask_crop[:, :, :-1]
+    label = image_mask_crop[:, :,-1]
+    
     # Cast image as self._dtype
     image = tf.cast(image, dtype=self._dtype)
 
-    return image, labels
+    return image, label

@@ -1,7 +1,7 @@
-#rm -rf tmp
+rm -rf /home/ghpark/ckpt_basnet
 
-python3 train.py --experiment=basnet_duts --mode=train --model_dir=./tmp/test --config_file=./configs/experiments/basnet/basnet_dut_gpu.yaml
-#python3 train.py --experiment=basnet_duts --mode=train --model_dir=./tmp/test --config_file=./configs/experiments/basnet/basnet_dut_gpu.yaml
+python3 train.py --experiment=basnet_duts --mode=train --model_dir=/home/ghpark/ckpt_basnet --config_file=./configs/experiments/basnet/basnet_dut_gpu.yaml
+#python3 train.py --experiment=basnet_duts --mode=eval --model_dir=/home/ghpark/ckpt_basnet --config_file=./configs/experiments/basnet/basnet_dut_gpu.yaml
 
 
 

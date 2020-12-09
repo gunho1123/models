@@ -62,10 +62,8 @@ class BASNetModel(tf.keras.Model):
 
     if self.decoder:
       features = self.decoder(features)
-    
     if self.refinement:
-      features['7'] = self.refinement(features['6'])
-    
+      features['ref'] = self.refinement(features['0'])
 
     return features
 

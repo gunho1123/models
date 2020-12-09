@@ -102,9 +102,11 @@ def basnet() -> cfg.ExperimentConfig:
 #PASCAL_INPUT_PATH_BASE = 'pascal_voc_seg'
 
 # DUTS Dataset
-DUTS_TRAIN_EXAMPLES = 10553
+DUTS_TRAIN_EXAMPLES = 21106
+#DUTS_TRAIN_EXAMPLES = 8
 DUTS_VAL_EXAMPLES = 5019
-DUTS_INPUT_PATH_BASE = '/data/DUTS_TR_TFRecords/'
+DUTS_INPUT_PATH_BASE = '/data/DUTS_TR_hflip_TFRecords/'
+#DUTS_INPUT_PATH_BASE = '/home/ghpark/tfrecord_duts_8/'
 
 
 
@@ -149,7 +151,7 @@ def basnet_duts() -> cfg.ExperimentConfig:
           steps_per_loop=steps_per_epoch,
           summary_interval=steps_per_epoch,
           checkpoint_interval=steps_per_epoch,
-          train_steps=270 * steps_per_epoch,  # (gunho) more epochs
+          train_steps=135 * steps_per_epoch,  # (gunho) more epochs
           #validation_steps=PASCAL_VAL_EXAMPLES // eval_batch_size,  # No validation in BASNet
           #validation_interval=steps_per_epoch,
           optimizer_config=optimization.OptimizationConfig({

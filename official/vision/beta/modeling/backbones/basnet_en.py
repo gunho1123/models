@@ -34,12 +34,12 @@ layers = tf.keras.layers
 # (block_fn, num_filters, stride, block_repeats, maxpool)
 
 BASNET_EN_SPECS = [
-        ('residual', 64,  1, 3, 0),   #ResNet-34
-        ('residual', 128, 2, 4, 0),   #ResNet-34
-        ('residual', 256, 2, 6, 0),   #ResNet-34
-        ('residual', 512, 2, 3, 1),   #ResNet-34
-        ('residual', 512, 1, 3, 1),   #BASNet
-        ('residual', 512, 1, 3, 0),   #BASNet
+        ('residual', 64,  1, 3, 0),   #ResNet-34, idx 0
+        ('residual', 128, 2, 4, 0),   #ResNet-34, idx 1
+        ('residual', 256, 2, 6, 0),   #ResNet-34, idx 2
+        ('residual', 512, 2, 3, 1),   #ResNet-34, idx 3
+        ('residual', 512, 1, 3, 1),   #BASNet,    idx 4
+        ('residual', 512, 1, 3, 0),   #BASNet,    idx 5
     ]
 
 @tf.keras.utils.register_keras_serializable(package='Vision')
@@ -93,18 +93,17 @@ class BASNet_En(tf.keras.Model):
     inputs = tf.keras.Input(shape=input_specs.shape[1:])
 
     x = layers.Conv2D(
-        # (gunho) for BASNet
+        # (gunho) Change filters for BASNet
         filters=64, kernel_size=3, strides=1, use_bias=False, padding='same',
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)(
             inputs)
-
     x = self._norm(
         axis=bn_axis, momentum=norm_momentum, epsilon=norm_epsilon)(
             x)
     x = tf_utils.get_activation(activation)(x)
-    # (gunho) for BASNet
+    # (gunho) Delete MaxPool layer for BASNet
     #x = layers.MaxPool2D(pool_size=3, strides=2, padding='same')(x)
     
 

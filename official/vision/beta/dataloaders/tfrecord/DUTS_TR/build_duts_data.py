@@ -14,29 +14,21 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Converts PASCAL VOC 2012 data to TFRecord file format with Example protos.
+"""Converts DUTS-TR data to TFRecord file format with Example protos.
 
-PASCAL VOC 2012 dataset is expected to have the following directory structure:
+DUTS-TR dataset is expected to have the following directory structure:
 
-  + pascal_voc_seg
+  + DUTS_TR
     - build_data.py
-    - build_voc2012_data.py (current working directory).
-    + VOCdevkit
-      + VOC2012
-        + JPEGImages
-        + SegmentationClass
-        + ImageSets
-          + Segmentation
+    - build_duts_data.py (current working directory).
     + tfrecord
 
 Image folder:
-  ./VOCdevkit/VOC2012/JPEGImages
+  ~/DUTS-TR/DUTS-TR-Image-Flip (augmented by hflipping to 21106 images)
 
-Semantic segmentation annotations:
-  ./VOCdevkit/VOC2012/SegmentationClass
+Mask folder:
+  ~/DUTS-TR/DUTS-TR-Mask-Flip (augmented by hflipping to 21106 images)
 
-list folder:
-  ./VOCdevkit/VOC2012/ImageSets/Segmentation
 
 This script converts data into sharded data files and save at tfrecord folder.
 
@@ -88,7 +80,7 @@ def _convert_dataset():
   Raises:
     RuntimeError: If loaded image and label have different shape.
   """
-  dataset = 'DUTS-TR'
+  dataset = 'DUTS-TR-hflip'
   sys.stdout.write('Processing ' + dataset)
 
   filenames_ext = os.listdir(FLAGS.image_folder)

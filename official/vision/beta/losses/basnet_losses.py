@@ -34,7 +34,7 @@ class BASNetLoss:
         reduction=tf.keras.losses.Reduction.SUM, from_logits=False)
     #self._ssim = tf.image.ssim_multiscale()
 
-  def __call__(self, logits, labels):
+  def __call__(self, sigmoids, labels):
     #_, height, width, num_classes = logits.get_shape().as_list()
     """
     if self._use_groundtruth_dimension:
@@ -56,24 +56,13 @@ class BASNetLoss:
     #total_iou_loss = 0
     
 
-    levels = sorted(logits.keys())
+    levels = sorted(sigmoids.keys())
     
     labels = tf.cast(labels, tf.float32)
     bce_losses = []
-    """
     for level in levels:
       bce_losses.append(
-          tf.keras.losses.binary_crossentropy(
-              labels,
-              logits[level],
-              from_logits=True
-          ))
-    """
-    for level in levels:
-      bce_losses.append(
-          self._bce_loss(
-              logits[level],
-              labels))
+          self._bce_loss(sigmoids[level], labels))
     #total_bce_loss = tf.math.add_n(bce_losses)
     return tf.math.add_n(bce_losses)
     
@@ -149,10 +138,10 @@ class BASNetLoss:
 
     #return loss
 
-  def _bce_loss(self, logits, labels, normalizer=1.0):
+  def _bce_loss(self, sigmoids, labels, normalizer=1.0):
     """Computes binary crossentropy loss."""
     with tf.name_scope('bce_loss'):
-      bce_loss = self._binary_crossentropy(labels, logits)
+      bce_loss = self._binary_crossentropy(labels, sigmoids)
       bce_loss /= normalizer
       return bce_loss
 

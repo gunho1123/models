@@ -25,6 +25,8 @@ import numpy as np
 MEAN_RGB = (0.485 * 255, 0.456 * 255, 0.406 * 255)
 STDDEV_RGB = (0.229 * 255, 0.224 * 255, 0.225 * 255)
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 class BASNetModule(export_base.ExportModule):
   """basnet Module."""
@@ -84,17 +86,13 @@ class BASNetModule(export_base.ExportModule):
 
 
 params = exp_factory.get_exp_config('basnet_duts')
-params.task.init_checkpoint = '../tmp/test/ckpt-178065'
-params.task.init_checkpoint_modules='all'
 
-
-print(params)
-
-image = tf.keras.preprocessing.image.load_img('../img1_test.jpg')
+image = tf.keras.preprocessing.image.load_img('./img1_test.jpg')
 input_arr = tf.keras.preprocessing.image.img_to_array(image)
 input_arr = np.array([input_arr])
 
-print(input_arr.shape)
+#print(input_arr.shape)
+
 
 
 #input_arr = tf.reshape(input_arr, [1, input_arr.shape[0], input_arr.shape[1], 3])
@@ -103,23 +101,46 @@ module = BASNetModule(
     params, batch_size=1, input_image_size=[224, 224])
 model = module.build_model()
 
+ckpt = tf.train.Checkpoint(**model.checkpoint_items)
+status = ckpt.restore("/home/ghpark/ckpt_basnet/ckpt-68588")
+status.assert_consumed()
 
+"""
 processed_images = tf.nest.map_structure(
     tf.stop_gradient,
     tf.map_fn(
         module._build_inputs,
         elems=input_arr,
         fn_output_signature=tf.TensorSpec(
-            shape=[224, 224, 3], dtype=tf.float32)))
+            shape=[224, 224, 3], dtype=tf.float32)
+    )
+)
+"""
+
+
+processed_images = tf.image.resize(input_arr, [224, 224])
+
+print("processed_image")
+print(processed_images.shape)
+print(processed_images)
+
+print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+processed_images = processed_images/255
+print(processed_images)
 
 outputs = model(processed_images, training=False)
 print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-#print(outputs)
+print(outputs)
 
-output = outputs['0']
+output = outputs['ref']
+output = output*255
+output = tf.cast(output, tf.uint8)
+print(output)
+
+
 output = output[0,:,:,0]
 
-#print(output)
+print(output.shape)
 
 
 img = np.zeros((224,224,3))

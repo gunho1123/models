@@ -555,28 +555,3 @@ def random_horizontal_flip(image, normalized_boxes=None, masks=None, seed=1):
           lambda: masks)
 
     return image, normalized_boxes, masks
-
-
-def random_crop_and_pad_image_and_mask(image, mask, size):
-  """Randomly crops `image` together with `mask`.
-  Args:
-    image: A Tensor with shape [D_1, ..., D_K, N]
-    mask: A Tensor with shape [D_1, ..., D_K, M]
-    size: A Tensor with shape [H, W] indicating the crop size.
-  Returns:
-    A tuple of (cropped_image, cropped_mask).
-  """
-  combined = tf.concat([image, mask], axis=2)
-  image_shape = tf.shape(image)
-  combined_pad = tf.image.pad_to_bounding_box(
-      combined, 0, 0,
-      tf.maximum(size[0], image_shape[0]),
-      tf.maximum(size[1], image_shape[1]))
-  last_mask_dim = tf.shape(mask)[-1]
-  last_image_dim = tf.shape(image)[-1]
-  combined_crop = tf.image.random_crop(
-      combined_pad,
-      size=tf.concat([size, [last_mask_dim + last_image_dim]],
-                     axis=0))
-  return (combined_crop[:, :, :last_image_dim],
-          combined_crop[:, :, last_image_dim:])
