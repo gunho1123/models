@@ -49,6 +49,7 @@ from official.modeling import hyperparams
 from official.vision.beta import configs
 from official.vision.beta.serving import detection
 from official.vision.beta.serving import image_classification
+from official.vision.beta.serving import basnet
 
 FLAGS = flags.FLAGS
 
@@ -109,6 +110,12 @@ def export_inference_graph(input_type, batch_size, input_image_size, params,
   elif isinstance(params.task, configs.retinanet.RetinaNetTask) or isinstance(
       params.task, configs.maskrcnn.MaskRCNNTask):
     export_module = detection.DetectionModule(
+        params=params,
+        batch_size=batch_size,
+        input_image_size=input_image_size)
+  elif isinstance(params.task, configs.basnet.BASNetTask):
+    print("Export BASNet Model")
+    export_module = basnet.BASNetModule(
         params=params,
         batch_size=batch_size,
         input_image_size=input_image_size)

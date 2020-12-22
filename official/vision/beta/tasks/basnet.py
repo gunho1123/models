@@ -88,12 +88,13 @@ class BASNetTask(base_task.Task):
     parser = basnet_input.Parser(
         output_size=input_size[:2],
         #ignore_label=ignore_label,
-        resize_eval_groundtruth=params.resize_eval_groundtruth,
-        groundtruth_padded_size=params.groundtruth_padded_size,
+        #resize_eval_groundtruth=params.resize_eval_groundtruth,
+        #groundtruth_padded_size=params.groundtruth_padded_size,
         aug_rand_hflip=False,
         #aug_scale_min=params.aug_scale_min,
         #aug_scale_max=params.aug_scale_max,
-        dtype=params.dtype)
+        #dtype=params.dtype
+        )
 
     reader = input_reader.InputReader(
         params,
@@ -224,6 +225,9 @@ class BASNetTask(base_task.Task):
     features, labels = inputs
 
     outputs = self.inference_step(features, model)
+    self.inference_image_save(outputs)
+    return
+    """
     outputs = tf.nest.map_structure(lambda x: tf.cast(x, tf.float32), outputs)
     loss = self.build_losses(model_outputs=outputs, labels=labels,
                              aux_losses=model.losses)
@@ -236,10 +240,27 @@ class BASNetTask(base_task.Task):
       logs.update({m.name: m.result() for m in metrics})
 
     return logs
+    """
 
   def inference_step(self, inputs, model):
     """Performs the forward step."""
     return model(inputs, training=False)
+
+  def inference_image_save(self, outputs):
+    ref_outputs = outputs['ref']  # [batch_size, 224, 224, 1] expected
+    ref_outputs = ref_outputs*255
+    ref_outputs = tf.cast(ref_outputs, tf.uint8)
+    encoded_png = tf.io.encode_png(ref_outputs[0])
+    op = tf.io.write_file('/home/ghpark/models/official/vision/beta/out.png', encoded_png) 
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    with tf.compat.v1.Session() as sess:
+      sess.run(op)
+    #ref_outputs = tf.image.grayscale_to_rgb(ref_outputs)
+
+    #for i, v in enumerate(ref_outputs):
+      #tf.keras.preprocessing.image.save_img("./out_img_"+str(i)+".png", v, data_format="channels_last")
+    
+    return
 
   def aggregate_logs(self, state=None, step_outputs=None):
     if state is None:

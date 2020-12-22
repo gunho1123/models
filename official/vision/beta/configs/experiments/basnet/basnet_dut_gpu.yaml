@@ -1,6 +1,5 @@
 runtime:
   #distribution_strategy: 'one_device'
-  #distribution_strategy: 'multi_worker_mirrored'
   distribution_strategy: 'mirrored'
   mixed_precision_dtype: 'float32'
   num_gpus: 8
@@ -12,5 +11,5 @@ task:
         model_id: 'BASNet_En'
     norm_activation:
       activation: 'relu'
-  init_checkpoint: ''
-  init_checkpoint_modules: ''
+  #init_checkpoint: '/home/ghpark/ckpt_basnet/'
+  #init_checkpoint_modules: 'all'

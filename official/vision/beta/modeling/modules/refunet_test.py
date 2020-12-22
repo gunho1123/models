@@ -23,6 +23,10 @@ from official.vision.beta.modeling.backbones import basnet_en
 from official.vision.beta.modeling.decoders import basnet_de
 from official.vision.beta.modeling.modules import refunet
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+
 layers = tf.keras.layers
 
 class RefUnet_Test(parameterized.TestCase, tf.test.TestCase):
@@ -54,11 +58,11 @@ class RefUnet_Test(parameterized.TestCase, tf.test.TestCase):
     
     endpoints = backbone(inputs)
     sups = network(endpoints)
-    sups['7'] = module(sups['6'])
-    self.assertIn(str(7), sups)
+    sups['ref'] = module(sups['7'])
+    self.assertIn(str(ref), sups)
     self.assertAllEqual(
         [1, input_size, input_size, 1],
-        sups[str(7)].shape.as_list())
+        sups[str(ref)].shape.as_list())
 
 
   def test_serialize_deserialize(self):
@@ -84,29 +88,38 @@ class RefUnet_Test(parameterized.TestCase, tf.test.TestCase):
     # If the serialization was successful, the new config should match the old.
     self.assertAllEqual(module.get_config(), new_module.get_config())
 
-
+"""
 if __name__ == '__main__':
   tf.test.main()
 """
+
+
 input_size = 224
 tf.keras.backend.set_image_data_format('channels_last')
 
 inputs = tf.keras.Input(shape=(input_size, input_size, 3), batch_size=1)
+
+
 
 backbone = basnet_en.BASNet_En()
 
 network = basnet_de.BASNet_De(
       input_specs=backbone.output_specs  
   )
-
+print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 module = refunet.RefUnet()
 
+print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 endpoints = backbone(inputs)
+
+print(endpoints)
+
 sups = network(endpoints)
 
 
-sups['7'] = module(sups['6'])
+
+
+sups['ref'] = module(sups['7'])
 
 print(sups)
 
-"""

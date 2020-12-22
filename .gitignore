@@ -81,6 +81,10 @@ celerybeat-schedule
 # dotenv
 .env
 
+# image
+*.jpg
+*.png
+
 # virtualenv
 venv/
 ENV/

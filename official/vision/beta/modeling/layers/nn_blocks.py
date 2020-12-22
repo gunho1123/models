@@ -140,7 +140,7 @@ class ResidualBlock(tf.keras.layers.Layer):
         kernel_size=3,
         strides=self._strides,
         padding='same',
-        use_bias=False,
+        use_bias=True,  # (gunho) True
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)
@@ -154,7 +154,7 @@ class ResidualBlock(tf.keras.layers.Layer):
         kernel_size=3,
         strides=1,
         padding='same',
-        use_bias=False,
+        use_bias=True,  # (gunho) True
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)

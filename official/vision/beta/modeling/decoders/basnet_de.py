@@ -29,15 +29,15 @@ from official.vision.beta.modeling.layers import nn_layers
 layers = tf.keras.layers
 
 # nf : num_filters, dr : dilation_rate
-# (conv1_nf, conv1_dr, convm_nf, convm_dr, conv2_nf, conv2_dr, scale_factor, mode)
+# (conv1_nf, conv1_dr, convm_nf, convm_dr, conv2_nf, conv2_dr, scale_factor)
 BASNET_DE_SPECS = [
-            (512, 2, 512, 2, 512, 2, 32, 'bilinear'),         #Bridge(Sup0)
-            (512, 1, 512, 2, 512, 2, 32, 'bilinear'), #Sup1, stage6d
-            (512, 1, 512, 1, 512, 1, 16, 'bilinear'), #Sup2, stage5d
-            (512, 1, 512, 1, 256, 1, 8,  'bilinear'), #Sup3, stage4d
-            (256, 1, 256, 1, 128, 1, 4,  'bilinear'), #Sup4, stage3d
-            (128, 1, 128, 1, 64,  1, 2,  'bilinear'), #Sup5, stage2d
-            (64,  1, 64,  1, 64,  1, 1,  'bilinear')  #Sup6, stage1d
+            (512, 2, 512, 2, 512, 2, 32),    #Bridge(Sup0)
+            (512, 1, 512, 2, 512, 2, 32), #Sup1, stage6d
+            (512, 1, 512, 1, 512, 1, 16), #Sup2, stage5d
+            (512, 1, 512, 1, 256, 1, 8),  #Sup3, stage4d
+            (256, 1, 256, 1, 128, 1, 4),  #Sup4, stage3d
+            (128, 1, 128, 1, 64,  1, 2),  #Sup5, stage2d
+            (64,  1, 64,  1, 64,  1, 1)   #Sup6, stage1d
         ]
 
 @tf.keras.utils.register_keras_serializable(package='Vision')
@@ -129,29 +129,29 @@ class BASNet_De(tf.keras.Model):
             )(x)
 
       output = layers.Conv2D(
-          filters=1, kernel_size=3, strides=1, use_bias=False, padding='same',
+          filters=1, kernel_size=3, strides=1, use_bias=True, padding='same',
           kernel_initializer=kernel_initializer,
           kernel_regularizer=kernel_regularizer,
           bias_regularizer=bias_regularizer
           )(x)
       output = layers.UpSampling2D(
           size=spec[6],
-          interpolation=spec[7]
+          interpolation='bilinear'
           )(output)
       output = tf.keras.layers.Activation(
           activation='sigmoid'
           )(output)
-      sup[str(i)] = output
+      sup[str(i+1)] = output
       if i != 0:
         x = layers.UpSampling2D(
             size=2,
-            interpolation=spec[7]
+            interpolation='bilinear'
             )(x)
 
     self._output_specs = {
         #for level in range(0, 6):
-        str(level): sup[str(level)].get_shape()
-        for level in range(0, 6)
+        str(order): sup[str(order)].get_shape()
+        for order in range(1, 7)
     }
 
     super(BASNet_De, self).__init__(inputs=inputs, outputs=sup, **kwargs)
@@ -176,5 +176,5 @@ class BASNet_De(tf.keras.Model):
 
   @property
   def output_specs(self):
-    """A dict of {level: TensorShape} pairs for the model output."""
+    """A dict of {order: TensorShape} pairs for the model output."""
     return self._output_specs

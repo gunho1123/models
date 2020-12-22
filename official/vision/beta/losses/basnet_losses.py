@@ -22,7 +22,7 @@ import tensorflow_addons as tfa
 EPSILON = 1e-5
 
 class BASNetLoss:
-  """Semantic segmentation loss."""
+  """BASNet loss."""
 
   def __init__(self, label_smoothing, class_weights,
                ignore_label, use_groundtruth_dimension):
@@ -32,7 +32,7 @@ class BASNetLoss:
     self._label_smoothing = label_smoothing
     self._binary_crossentropy = tf.keras.losses.BinaryCrossentropy(
         reduction=tf.keras.losses.Reduction.SUM, from_logits=False)
-    #self._ssim = tf.image.ssim_multiscale()
+    self._ssim = tf.image.ssim
 
   def __call__(self, sigmoids, labels):
     #_, height, width, num_classes = logits.get_shape().as_list()
@@ -48,24 +48,52 @@ class BASNetLoss:
           method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     """
 
-    #print("TEST_label_shape")
-    #print(labels.get_shape()) # [8, 244, 244, None]
+    print("TEST_label_shape")
+    print(labels.get_shape()) # [Batch/GPU, 244, 244]
     
-    #total_bce_loss = 0
-    #total_ssim_loss = 0
-    #total_iou_loss = 0
+    #print("TEST_sigmoid_shape")
+    #print(sigmoids['ref'].get_shape()) # [Batch/GPU, 244, 244, None]
     
 
     levels = sorted(sigmoids.keys())
     
     labels = tf.cast(labels, tf.float32)
+    labels_bce = labels
+    labels = tf.expand_dims(labels, axis=-1)
+
+
     bce_losses = []
+    ssim_losses = []
+    iou_losses = []
+
+
+
+
     for level in levels:
       bce_losses.append(
-          self._bce_loss(sigmoids[level], labels))
-    #total_bce_loss = tf.math.add_n(bce_losses)
-    return tf.math.add_n(bce_losses)
+          #self._binary_crossentropy(sigmoids[level], labels_temp))
+          self._binary_crossentropy(labels_bce, sigmoids[level]))
+      ssim_losses.append(
+          1 - self._ssim(sigmoids[level], labels, max_val=1.0))
+      iou_losses.append(
+          self._iou_loss(sigmoids[level], labels))
     
+
+    total_bce_loss = tf.math.add_n(bce_losses)
+    total_ssim_loss = tf.math.add_n(ssim_losses)
+    total_iou_loss = tf.math.add_n(iou_losses)
+
+
+    
+    total_loss = total_bce_loss + total_ssim_loss + total_iou_loss
+    #total_loss = total_bce_loss + total_ssim_loss
+    #total_loss = total_iou_loss
+
+
+    return total_loss
+    
+
+
 
     """
     bce = tf.keras.losses.BinaryCrossentropy()
@@ -138,13 +166,30 @@ class BASNetLoss:
 
     #return loss
 
+  """
   def _bce_loss(self, sigmoids, labels, normalizer=1.0):
-    """Computes binary crossentropy loss."""
     with tf.name_scope('bce_loss'):
       bce_loss = self._binary_crossentropy(labels, sigmoids)
       bce_loss /= normalizer
       return bce_loss
+  """
 
+  def _iou_loss(self, sigmoids, labels):
+    total_iou_loss = 0
+    
+    Iand1 = tf.reduce_sum(sigmoids[:,:,:,:]*labels[:,:,:,:])
+    Ior1 = tf.reduce_sum(sigmoids[:,:,:,:])+tf.reduce_sum(labels[:,:,:,:])-Iand1
+    IoU = Iand1/Ior1
+    total_iou_loss += 1-IoU
+
+    """
+    for sigmoid, label in zip(sigmoids, labels):
+      Iand1 = tf.reduce_sum(sigmoid[:,:,:]*label[:,:,:])
+      Ior1 = tf.reduce_sum(sigmoid[:,:,:])+tf.reduce_sum(label[:,:,:])-Iand1
+      IoU = Iand1/Ior1
+      total_iou_loss += 1-IoU
+    """
+    return total_iou_loss
 
 
 

@@ -72,9 +72,11 @@ class Parser(parser.Parser):
     """
     self._output_size = output_size
     self._resize_eval_groundtruth = resize_eval_groundtruth
+    """
     if groundtruth_padded_size is None:
       raise ValueError('groundtruth_padded_size ([height, width]) needs to be'
                        'specified when resize_eval_groundtruth is False.')
+    """
     self._groundtruth_padded_size = groundtruth_padded_size
 
     # Data augmentation.
@@ -95,12 +97,8 @@ class Parser(parser.Parser):
     image = tf.reshape(image, (height, width, 3))
     
     label = tf.reshape(label, (height, width, 1))
-    label = tf.cast(label, tf.float32)
+    label = tf.image.convert_image_dtype(label, dtype=tf.float32)
 
-    # (gunho) simply normalize the pixels from [0,255] to [0,1]
-    image = image/tf.reduce_max(image)
-    label = label/tf.reduce_max(label)
-    
     image = preprocess_ops.normalize_image(image)
 
     return image, label
@@ -124,7 +122,8 @@ class Parser(parser.Parser):
                                            self._output_size + [4])
     image = image_mask_crop[:, :, :-1]
     label = image_mask_crop[:, :,-1]
-    
+
+
     # Cast image as self._dtype
     image = tf.cast(image, dtype=self._dtype)
 
