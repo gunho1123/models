@@ -98,11 +98,9 @@ def basnet() -> cfg.ExperimentConfig:
 
 # DUTS Dataset
 DUTS_TRAIN_EXAMPLES = 21106
-#DUTS_TRAIN_EXAMPLES = 8
-DUTS_VAL_EXAMPLES = 8
-DUTS_INPUT_PATH_BASE = '/data/DUTS_TR_hflip_TFRecords/'
-#DUTS_INPUT_PATH_BASE = '/home/ghpark/tfrecord_duts_8/'
-DUTS_INPUT_PATH_BASE_TEMP_FOR_EVAL = '/home/ghpark/tfrecord_duts_8/'
+DUTS_VAL_EXAMPLES = 5019
+DUTS_INPUT_PATH_BASE_TR = '/data/DUTS/DUTS_TR_hflip_TFRecords/'
+DUTS_INPUT_PATH_BASE_VAL = '/data/DUTS/DUTS_TE_TFRecords/'
 
 
 
@@ -133,14 +131,14 @@ def basnet_duts() -> cfg.ExperimentConfig:
           losses=Losses(l2_weight_decay=0),
           train_data=DataConfig(
               #input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'train_aug*'), # Dataset Path #
-              input_path=os.path.join(DUTS_INPUT_PATH_BASE, 'DUTS-TR-*'),
+              input_path=os.path.join(DUTS_INPUT_PATH_BASE_TR, 'DUTS-TR-*'),
               is_training=True,
               global_batch_size=train_batch_size,
               #aug_scale_min=0.5,
               #aug_scale_max=2.0
           ),
           validation_data=DataConfig(
-              input_path=os.path.join(DUTS_INPUT_PATH_BASE_TEMP_FOR_EVAL, 'DUTS-TR-*'),
+              input_path=os.path.join(DUTS_INPUT_PATH_BASE_VAL, 'DUTS-TE-*'),
               is_training=False,
               global_batch_size=eval_batch_size,
           ),

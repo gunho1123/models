@@ -48,8 +48,8 @@ class BASNetLoss:
           method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     """
 
-    print("TEST_label_shape")
-    print(labels.get_shape()) # [Batch/GPU, 244, 244]
+    #print("T_label_shape")
+    #print(labels.get_shape()) # [Batch/GPU, 244, 244]
     
     #print("TEST_sigmoid_shape")
     #print(sigmoids['ref'].get_shape()) # [Batch/GPU, 244, 244, None]
@@ -93,78 +93,6 @@ class BASNetLoss:
     return total_loss
     
 
-
-
-    """
-    bce = tf.keras.losses.BinaryCrossentropy()
-    bce_loss = []
-    for logit, label in zip(logits, labels):
-      bce_loss.append(bce(logit, label).numpy())
-
-    bce_loss = np.array(bce_loss)
-    total_bce_loss = np.sum(bce_loss)
-    print("total_bce_loss")
-    print(total_bce_loss)
-
-    ssim = tf.image.ssim_multiscale(logits, labels, max_val=1.0)
-    ssim_loss = 1-ssim
-    total_ssim_loss = np.sum(ssim_loss)
-    print("total_ssim_loss")
-    print(total_ssim_loss)
-    
-    total_iou_loss = 0.0
-    for logit, label in zip(logits, labels):
-      
-      Iand1 = tf.reduce_sum(logit[:,:,:]*label[:,:,:])
-      Ior1 = tf.reduce_sum(logit[:,:,:])+tf.reduce_sum(label[:,:,:])-Iand1
-      IoU = Iand1/Ior1
-
-      total_iou_loss += (1-IoU)
-
-    #total_iou_loss = total_iou_loss/logits.get_shape()[0]
-
-    print("total_iou_loss")
-    print(total_iou_loss)
-    """
-    #loss = total_bce_loss + total_ssim_loss + total_iou_loss
-    #loss = total_bce_loss
- 
-    """
-    valid_mask = tf.not_equal(labels, self._ignore_label) #_ignore_label = 255, white : object = 0 & background = 1
-    normalizer = tf.reduce_sum(tf.cast(valid_mask, tf.float32)) + EPSILON
-    # Assign pixel with ignore label to class 0 (background). The loss on the
-    # pixel will later be masked out.
-    labels = tf.where(valid_mask, labels, tf.zeros_like(labels))
-
-    labels = tf.squeeze(tf.cast(labels, tf.int32), axis=3)
-    valid_mask = tf.squeeze(tf.cast(valid_mask, tf.float32), axis=3)
-    onehot_labels = tf.one_hot(labels, num_classes)
-    onehot_labels = onehot_labels * (
-        1 - self._label_smoothing) + self._label_smoothing / num_classes
-    #cross_entropy_loss = tf.nn.softmax_cross_entropy_with_logits(
-        #labels=onehot_labels, logits=logits)
-    cross_entropy_loss = tf.nn.softmax_cross_entropy_with_logits(
-        labels=onehot_labels, logits=logits)
-
-
-    if not self._class_weights:
-      class_weights = [1] * num_classes
-    else:
-      class_weights = self._class_weights
-
-    if num_classes != len(class_weights):
-      raise ValueError(
-          'Length of class_weights should be {}'.format(num_classes))
-
-    weight_mask = tf.einsum('...y,y->...',
-                            tf.one_hot(labels, num_classes, dtype=tf.float32),
-                            tf.constant(class_weights, tf.float32))
-    valid_mask *= weight_mask
-    cross_entropy_loss *= tf.cast(valid_mask, tf.float32)
-    loss = tf.reduce_sum(cross_entropy_loss) / normalizer
-    """
-
-    #return loss
 
   """
   def _bce_loss(self, sigmoids, labels, normalizer=1.0):

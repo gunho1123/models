@@ -141,13 +141,8 @@ class Parser(parser.Parser):
     image = tf.image.resize(image, tf.cast([256, 256], tf.int32))
     label = tf.image.resize(label, tf.cast([256, 256], tf.int32))
 
-    # (gunho) random crop both image and mask
-    image_mask = tf.concat([image, label], axis=2)
-    image_mask_crop = tf.image.random_crop(image_mask,
-                                           self._output_size + [4])
-    image = image_mask_crop[:, :, :-1]
-    label = image_mask_crop[:, :,-1]
-    
+    # (gunho) No random crop for evaluation
+
     # Cast image as self._dtype
     image = tf.cast(image, dtype=self._dtype)
 

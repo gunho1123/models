@@ -11,5 +11,5 @@ task:
         model_id: 'BASNet_En'
     norm_activation:
       activation: 'relu'
-  #init_checkpoint: '/home/ghpark/ckpt_basnet/'
-  #init_checkpoint_modules: 'all'
+  init_checkpoint: '/home/ghpark/ckpt_resnet34_192/'
+  init_checkpoint_modules: 'backbone'
