@@ -23,7 +23,7 @@ from official.core import input_reader
 from official.core import task_factory
 from official.vision.beta.configs import basnet as exp_cfg
 from official.vision.beta.dataloaders import basnet_input # Prepare input datas
-from official.vision.beta.evaluation import segmentation_metrics
+from official.vision.beta.evaluation import basnet_metrics
 from official.vision.beta.losses import basnet_losses
 from official.vision.beta.modeling import factory
 
@@ -66,6 +66,10 @@ class BASNetTask(base_task.Task):
       status.assert_consumed()
     else:
       ckpt_items = {}
+      if 'resnet34' in self.task_config.init_checkpoint_modules:
+        ckpt_items.update(backbone=model.backbone)
+        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        print(ckpt_items['backbone'].net)
       if 'backbone' in self.task_config.init_checkpoint_modules:
         ckpt_items.update(backbone=model.backbone)
       if 'decoder' in self.task_config.init_checkpoint_modules:
@@ -88,12 +92,13 @@ class BASNetTask(base_task.Task):
     parser = basnet_input.Parser(
         output_size=input_size[:2],
         #ignore_label=ignore_label,
-        resize_eval_groundtruth=params.resize_eval_groundtruth,
-        groundtruth_padded_size=params.groundtruth_padded_size,
+        #resize_eval_groundtruth=params.resize_eval_groundtruth,
+        #groundtruth_padded_size=params.groundtruth_padded_size,
         aug_rand_hflip=False,
         #aug_scale_min=params.aug_scale_min,
         #aug_scale_max=params.aug_scale_max,
-        dtype=params.dtype)
+        #dtype=params.dtype
+        )
 
     reader = input_reader.InputReader(
         params,
@@ -130,26 +135,20 @@ class BASNetTask(base_task.Task):
 
     return total_loss
 
-  def build_metrics(self, training=True):
+  def build_metrics(self, training=False):
     """Gets streaming metrics for training/validation."""
     metrics = []
-    """
     if training:
-      _ = 0
-      # TODO(arashwan): make MeanIoU tpu friendly.
-      if not isinstance(tf.distribute.get_strategy(),
-                        tf.distribute.experimental.TPUStrategy):
-        metrics.append(segmentation_metrics.MeanIoU(
-            name='mean_iou',
-            num_classes=self.task_config.model.num_classes,
-            rescale_predictions=False))
+      metrics.append(basnet_metrics.MeanAbsoluteError(
+          name='mean_absolute_error',
+          rescale_predictions=False,
+          dtype=tf.float32))
     else:
-      self.miou_metric = segmentation_metrics.MeanIoU(
-          name='val_mean_iou',
-          num_classes=self.task_config.model.num_classes,
-          rescale_predictions=not self.task_config.validation_data
-          .resize_eval_groundtruth)
-    """
+      self.mae_metric = basnet_metrics.MeanAbsoluteError(
+          name='val_mean_absolute_error',
+          rescale_predictions=False,
+          dtype=tf.float32)
+
     return metrics
 
   def train_step(self, inputs, model, optimizer, metrics=None):
@@ -212,30 +211,30 @@ class BASNetTask(base_task.Task):
 
   def validation_step(self, inputs, model, metrics=None):
     """Validatation step.
-
     Args:
       inputs: a dictionary of input tensors.
       model: the keras.Model.
       metrics: a nested structure of metrics objects.
-
     Returns:
       A dictionary of logs.
     """
     features, labels = inputs
 
+
     outputs = self.inference_step(features, model)
     outputs = tf.nest.map_structure(lambda x: tf.cast(x, tf.float32), outputs)
-    loss = self.build_losses(model_outputs=outputs, labels=labels,
-                             aux_losses=model.losses)
-
+    
+    loss = 0
     logs = {self.loss: loss}
-    logs.update({self.miou_metric.name: (labels, outputs)})
+    
+
+    logs.update({self.mae_metric.name: (labels, outputs['ref'])})
 
     if metrics:
-      self.process_metrics(metrics, labels, outputs)
+      self.process_metrics(metrics, labels, outputs['ref'])
       logs.update({m.name: m.result() for m in metrics})
 
-    return logs
+    return logs    
 
   def inference_step(self, inputs, model):
     """Performs the forward step."""
@@ -243,11 +242,11 @@ class BASNetTask(base_task.Task):
 
   def aggregate_logs(self, state=None, step_outputs=None):
     if state is None:
-      self.miou_metric.reset_states()
-      state = self.miou_metric
-    self.miou_metric.update_state(step_outputs[self.miou_metric.name][0],
-                                  step_outputs[self.miou_metric.name][1])
+      self.mae_metric.reset_states()
+      state = self.mae_metric
+    self.mae_metric.update_state(step_outputs[self.mae_metric.name][0],
+                                  step_outputs[self.mae_metric.name][1])
     return state
 
   def reduce_aggregated_logs(self, aggregated_logs):
-    return {self.miou_metric.name: self.miou_metric.result().numpy()}
+    return {self.mae_metric.name: self.mae_metric.result().numpy()}

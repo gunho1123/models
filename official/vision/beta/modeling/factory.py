@@ -244,7 +244,7 @@ def build_retinanet(input_specs: tf.keras.layers.InputSpec,
 
 def build_segmentation_model(
     input_specs: tf.keras.layers.InputSpec,
-    model_config: segmentation_cfg.ImageSegmentationModel,
+    model_config: segmentation_cfg.SemanticSegmentationModel,
     l2_regularizer: tf.keras.regularizers.Regularizer = None):
   """Builds Segmentation model."""
   backbone = backbones.factory.build_backbone(
@@ -266,6 +266,9 @@ def build_segmentation_model(
       num_convs=head_config.num_convs,
       num_filters=head_config.num_filters,
       upsample_factor=head_config.upsample_factor,
+      feature_fusion=head_config.feature_fusion,
+      low_level=head_config.low_level,
+      low_level_num_filters=head_config.low_level_num_filters,
       activation=norm_activation_config.activation,
       use_sync_bn=norm_activation_config.use_sync_bn,
       norm_momentum=norm_activation_config.norm_momentum,

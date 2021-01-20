@@ -1,0 +1,12 @@
+
+python3 train.py --experiment=resnet_imagenet --mode=train_and_eval --model_dir=/home/gunho1123/ckpt_encoder --config_file=./configs/experiments/image_classification/imagenet_basnet_gpu.yaml
+#python3 train.py --experiment=basnet_duts --mode=train --model_dir=/home/ghpark/ckpt_basnet_size_test --config_file=./configs/experiments/basnet/basnet_dut_gpu.yaml
+
+
+#python3 train.py --experiment=basnet_duts --mode=eval --model_dir=/home/ghpark/ckpt_basnet --config_file=./configs/experiments/basnet/basnet_dut_gpu.yaml
+
+
+
+
+#python3 train.py --experiment=resnet_imagenet --mode=train --model_dir=./resnet34/ --config_file=./configs/experiments/image_classification/imagenet_resnet34_gpu.yaml
+

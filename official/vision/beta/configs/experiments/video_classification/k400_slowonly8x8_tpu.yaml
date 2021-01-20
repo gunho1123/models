@@ -1,9 +1,21 @@
 # SlowOnly video classification on Kinetics-400. Expected performance to be updated.
+<<<<<<< HEAD
+=======
+#
+# --experiment_type=video_classification_kinetics400
+# Expected accuracy: 71.5% top-1, 89.5% top-5.
+>>>>>>> upstream/master
 runtime:
   distribution_strategy: 'tpu'
   mixed_precision_dtype: 'bfloat16'
 task:
   model:
+<<<<<<< HEAD
+=======
+    dropout_rate: 0.5
+    norm_activation:
+      use_sync_bn: false
+>>>>>>> upstream/master
     backbone:
       resnet_3d:
         block_specs: !!python/tuple
@@ -39,8 +51,13 @@ task:
         stem_conv_temporal_kernel_size: 1
         stem_conv_temporal_stride: 1
         stem_pool_temporal_stride: 1
+<<<<<<< HEAD
     dropout_rate: 0.5
   train_data:
+=======
+  train_data:
+    name: kinetics400
+>>>>>>> upstream/master
     feature_shape: !!python/tuple
     - 8
     - 224
@@ -51,7 +68,20 @@ task:
     dtype: 'bfloat16'
     shuffle_buffer_size: 1024
   validation_data:
+<<<<<<< HEAD
     global_batch_size: 32
+=======
+    name: kinetics400
+    feature_shape: !!python/tuple
+    - 8
+    - 256
+    - 256
+    - 3
+    temporal_stride: 8
+    num_test_clips: 10
+    num_test_crops: 3
+    global_batch_size: 64
+>>>>>>> upstream/master
     dtype: 'bfloat16'
     drop_remainder: false
 trainer:

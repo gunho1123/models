@@ -83,7 +83,7 @@ class RefUnet(tf.keras.Model):
     residual = inputs
 
     x = layers.Conv2D(
-        filters=64, kernel_size=3, strides=1, use_bias=False, padding='same',
+        filters=64, kernel_size=3, strides=1, use_bias=True, padding='same',
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)(
@@ -108,8 +108,8 @@ class RefUnet(tf.keras.Model):
         
       endpoints[str(i)] = x
 
-      x = layers.MaxPool2D(pool_size=2, strides=2, padding='same')(x)
-
+      #x = layers.MaxPool2D(pool_size=2, strides=2, padding='same')(x)
+      x = layers.MaxPool2D(pool_size=2, strides=2, padding='valid')(x)
 
     # Bridge
     x = nn_layers.ConvBNReLU(
@@ -151,7 +151,7 @@ class RefUnet(tf.keras.Model):
 
       if i == 3:
         x = layers.Conv2D(
-            filters=1, kernel_size=3, strides=1, use_bias=False, padding='same',
+            filters=1, kernel_size=3, strides=1, use_bias=True, padding='same',
             kernel_initializer=self._kernel_initializer,
             kernel_regularizer=self._kernel_regularizer,
             bias_regularizer=self._bias_regularizer
@@ -169,7 +169,7 @@ class RefUnet(tf.keras.Model):
         )(output)
 
     #self._output_specs = {l: endpoints[l].get_shape() for l in endpoints}
-    self._output_specs = {'0': output.get_shape()}
+    self._output_specs = output.get_shape()
 
     super(RefUnet, self).__init__(inputs=inputs, outputs=output, **kwargs)
 
@@ -179,5 +179,4 @@ class RefUnet(tf.keras.Model):
 
   @property
   def output_specs(self):
-    """A dict of {level: TensorShape} pairs for the model output."""
     return self._output_specs

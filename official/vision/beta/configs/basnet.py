@@ -77,7 +77,7 @@ class BASNetTask(cfg.TaskConfig):
   """The model config."""
   model: BASNetModel = BASNetModel()
   train_data: DataConfig = DataConfig(is_training=True)
-  #validation_data: DataConfig = DataConfig(is_training=False)
+  validation_data: DataConfig = DataConfig(is_training=False)
   losses: Losses = Losses()
   gradient_clip_norm: float = 0.0
   init_checkpoint: Optional[str] = None
@@ -96,25 +96,19 @@ def basnet() -> cfg.ExperimentConfig:
           'task.validation_data.is_training != None'
       ])
 
-# PASCAL VOC 2012 Dataset
-#PASCAL_TRAIN_EXAMPLES = 10582
-#PASCAL_VAL_EXAMPLES = 1449
-#PASCAL_INPUT_PATH_BASE = 'pascal_voc_seg'
-
 # DUTS Dataset
 DUTS_TRAIN_EXAMPLES = 21106
-#DUTS_TRAIN_EXAMPLES = 8
 DUTS_VAL_EXAMPLES = 5019
-DUTS_INPUT_PATH_BASE = '/data/DUTS_TR_hflip_TFRecords/'
-#DUTS_INPUT_PATH_BASE = '/home/ghpark/tfrecord_duts_8/'
+DUTS_INPUT_PATH_BASE_TR = '/data/DUTS/DUTS_TR_hflip_TFRecords/'
+DUTS_INPUT_PATH_BASE_VAL = '/data/DUTS/DUTS_TE_TFRecords/'
 
 
 
 @exp_factory.register_config_factory('basnet_duts')
 def basnet_duts() -> cfg.ExperimentConfig:
   """Image segmentation on imagenet with resnet deeplabv3."""
-  train_batch_size = 8
-  eval_batch_size = 4
+  train_batch_size = 16
+  eval_batch_size = 8
   steps_per_epoch = DUTS_TRAIN_EXAMPLES // train_batch_size
   config = cfg.ExperimentConfig(
       task=BASNetTask(
@@ -133,17 +127,22 @@ def basnet_duts() -> cfg.ExperimentConfig:
                   activation='relu',
                   norm_momentum=0.99,
                   norm_epsilon=1e-3,
-                  use_sync_bn=False)),
+                  use_sync_bn=True)),
           losses=Losses(l2_weight_decay=0),
           train_data=DataConfig(
-              #input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'train_aug*'), # Dataset Path ###########
-              input_path=os.path.join(DUTS_INPUT_PATH_BASE, 'DUTS-TR-*'), # Dataset Path ###########
+              #input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'train_aug*'), # Dataset Path #
+              input_path=os.path.join(DUTS_INPUT_PATH_BASE_TR, 'DUTS-TR-*'),
               is_training=True,
               global_batch_size=train_batch_size,
               #aug_scale_min=0.5,
               #aug_scale_max=2.0
           ),
-          # No validation for BASNet
+          validation_data=DataConfig(
+              input_path=os.path.join(DUTS_INPUT_PATH_BASE_VAL, 'DUTS-TE-*'),
+              is_training=False,
+              global_batch_size=eval_batch_size,
+          ),
+
           #init_checkpoint='',
           #init_checkpoint_modules='backbone'
       ),
@@ -151,9 +150,9 @@ def basnet_duts() -> cfg.ExperimentConfig:
           steps_per_loop=steps_per_epoch,
           summary_interval=steps_per_epoch,
           checkpoint_interval=steps_per_epoch,
-          train_steps=135 * steps_per_epoch,  # (gunho) more epochs
-          #validation_steps=PASCAL_VAL_EXAMPLES // eval_batch_size,  # No validation in BASNet
-          #validation_interval=steps_per_epoch,
+          train_steps=300 * steps_per_epoch,  # (gunho) more epochs
+          validation_steps=DUTS_VAL_EXAMPLES // eval_batch_size,  # No validation in BASNet
+          validation_interval=steps_per_epoch,
           optimizer_config=optimization.OptimizationConfig({
               'optimizer': {
                   'type': 'adam', #BASNet
@@ -164,14 +163,13 @@ def basnet_duts() -> cfg.ExperimentConfig:
                   }
               },
               'learning_rate': {
-                  'type': 'constant',
-                  'constant': {
-                      'learning_rate': 0.001,
-                  }
-              },
+                  'type': 'stepwise',
+                  'stepwise': {'boundaries': [70*steps_per_epoch, 160*steps_per_epoch],
+                               'values': [0.001, 0.001, 0.0001]}
+              }
           })),
       restrictions=[
-          'task.train_data.is_training != None'
-          #'task.validation_data.is_training != None'
+          'task.train_data.is_training != None',
+          'task.validation_data.is_training != None'
       ])
   return config

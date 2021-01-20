@@ -1,0 +1,51 @@
+runtime:
+  #distribution_strategy: 'one_device'
+  distribution_strategy: 'mirrored'
+  mixed_precision_dtype: 'float32'
+  loss_scale: 'dynamic'
+  num_gpus: 4
+
+task:
+  model:
+    num_classes: 1001
+    input_size: [224, 224, 3]
+    backbone:
+      type: 'basnet_en'
+      basnet_en:
+        model_id: 'BASNet_En'
+    norm_activation:
+      use_sync_bn: True
+  losses:
+    l2_weight_decay: 0.0001
+    one_hot: True
+    label_smoothing: 0.1
+  train_data:
+    is_training: True
+    global_batch_size: 64
+    dtype: 'float32'
+  validation_data:
+    is_training: False
+    global_batch_size: 64
+    dtype: 'float32'
+    drop_remainder: False
+trainer:
+  train_steps: 56160
+  validation_steps: 25
+  validation_interval: 625
+  steps_per_loop: 625
+  summary_interval: 625
+  checkpoint_interval: 625
+  optimizer_config:
+    optimizer:
+      type: 'sgd'
+      sgd:
+        momentum: 0.9
+    learning_rate:
+      type: 'stepwise'
+      stepwise:
+        boundaries: [18750, 37500, 50000]
+        values: [0.1, 0.1, 0.01, 0.01]
+    warmup:
+      type: 'linear'
+      linear:
+        warmup_steps: 3125

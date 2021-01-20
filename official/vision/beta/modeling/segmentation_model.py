@@ -23,6 +23,7 @@ layers = tf.keras.layers
 @tf.keras.utils.register_keras_serializable(package='Vision')
 class SegmentationModel(tf.keras.Model):
   """A Segmentation class model.
+
   Input images are passed through backbone first. Decoder network is then
   applied, and finally, segmentation head is applied on the output of the
   decoder network. Layers such as ASPP should be part of decoder. Any feature
@@ -38,6 +39,7 @@ class SegmentationModel(tf.keras.Model):
                head,
                **kwargs):
     """Segmentation initialization function.
+
     Args:
       backbone: a backbone network.
       decoder: a decoder network. E.g. FPN.

@@ -27,13 +27,14 @@ from official.vision.beta.configs import semantic_segmentation as exp_cfg
 
 class ImageSegmentationConfigTest(tf.test.TestCase, parameterized.TestCase):
 
-  @parameterized.parameters(('seg_deeplabv3_pascal',),)
+  @parameterized.parameters(('seg_deeplabv3_pascal',),
+                            ('seg_deeplabv3plus_pascal',))
   def test_semantic_segmentation_configs(self, config_name):
     config = exp_factory.get_exp_config(config_name)
     self.assertIsInstance(config, cfg.ExperimentConfig)
-    self.assertIsInstance(config.task, exp_cfg.ImageSegmentationTask)
+    self.assertIsInstance(config.task, exp_cfg.SemanticSegmentationTask)
     self.assertIsInstance(config.task.model,
-                          exp_cfg.ImageSegmentationModel)
+                          exp_cfg.SemanticSegmentationModel)
     self.assertIsInstance(config.task.train_data, exp_cfg.DataConfig)
     config.task.train_data.is_training = None
     with self.assertRaises(KeyError):

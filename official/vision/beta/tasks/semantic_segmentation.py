@@ -23,17 +23,18 @@ from official.core import input_reader
 from official.core import task_factory
 from official.vision.beta.configs import semantic_segmentation as exp_cfg
 from official.vision.beta.dataloaders import segmentation_input
+from official.vision.beta.dataloaders import dataset_fn
 from official.vision.beta.evaluation import segmentation_metrics
 from official.vision.beta.losses import segmentation_losses
 from official.vision.beta.modeling import factory
 
 
-@task_factory.register_task_cls(exp_cfg.ImageSegmentationTask)
-class ImageSegmentationTask(base_task.Task):
-  """A task for image classification."""
+@task_factory.register_task_cls(exp_cfg.SemanticSegmentationTask)
+class SemanticSegmentationTask(base_task.Task):
+  """A task for semantic segmentation."""
 
   def build_model(self):
-    """Builds classification model."""
+    """Builds segmentation model."""
     input_specs = tf.keras.layers.InputSpec(
         shape=[None] + self.task_config.model.input_size)
 
@@ -81,22 +82,23 @@ class ImageSegmentationTask(base_task.Task):
   def build_inputs(self, params, input_context=None):
     """Builds classification input."""
 
-    input_size = self.task_config.model.input_size
     ignore_label = self.task_config.losses.ignore_label
 
     decoder = segmentation_input.Decoder()
     parser = segmentation_input.Parser(
-        output_size=input_size[:2],
+        output_size=params.output_size,
+        train_on_crops=params.train_on_crops,
         ignore_label=ignore_label,
         resize_eval_groundtruth=params.resize_eval_groundtruth,
         groundtruth_padded_size=params.groundtruth_padded_size,
         aug_scale_min=params.aug_scale_min,
         aug_scale_max=params.aug_scale_max,
+        aug_rand_hflip=params.aug_rand_hflip,
         dtype=params.dtype)
 
     reader = input_reader.InputReader(
         params,
-        dataset_fn=tf.data.TFRecordDataset,
+        dataset_fn=dataset_fn.pick_dataset_fn(params.file_type),
         decoder_fn=decoder.decode,
         parser_fn=parser.parse_fn(params.is_training))
 
@@ -105,7 +107,7 @@ class ImageSegmentationTask(base_task.Task):
     return dataset
 
   def build_losses(self, labels, model_outputs, aux_losses=None):
-    """Sparse categorical cross entropy loss.
+    """Segmentation loss.
 
     Args:
       labels: labels.
@@ -120,7 +122,8 @@ class ImageSegmentationTask(base_task.Task):
         loss_params.label_smoothing,
         loss_params.class_weights,
         loss_params.ignore_label,
-        use_groundtruth_dimension=loss_params.use_groundtruth_dimension)
+        use_groundtruth_dimension=loss_params.use_groundtruth_dimension,
+        top_k_percent_pixels=loss_params.top_k_percent_pixels)
 
     total_loss = segmentation_loss_fn(model_outputs, labels['masks'])
 
@@ -133,19 +136,18 @@ class ImageSegmentationTask(base_task.Task):
     """Gets streaming metrics for training/validation."""
     metrics = []
     if training:
-      # TODO(arashwan): make MeanIoU tpu friendly.
-      if not isinstance(tf.distribute.get_strategy(),
-                        tf.distribute.experimental.TPUStrategy):
-        metrics.append(segmentation_metrics.MeanIoU(
-            name='mean_iou',
-            num_classes=self.task_config.model.num_classes,
-            rescale_predictions=False))
+      metrics.append(segmentation_metrics.MeanIoU(
+          name='mean_iou',
+          num_classes=self.task_config.model.num_classes,
+          rescale_predictions=False,
+          dtype=tf.float32))
     else:
       self.miou_metric = segmentation_metrics.MeanIoU(
           name='val_mean_iou',
           num_classes=self.task_config.model.num_classes,
           rescale_predictions=not self.task_config.validation_data
-          .resize_eval_groundtruth)
+          .resize_eval_groundtruth,
+          dtype=tf.float32)
 
     return metrics
 
@@ -162,6 +164,13 @@ class ImageSegmentationTask(base_task.Task):
       A dictionary of logs.
     """
     features, labels = inputs
+
+    input_partition_dims = self.task_config.train_input_partition_dims
+    if input_partition_dims:
+      strategy = tf.distribute.get_strategy()
+      features = strategy.experimental_split_to_logical_devices(
+          features, input_partition_dims)
+
     num_replicas = tf.distribute.get_strategy().num_replicas_in_sync
     with tf.GradientTape() as tape:
       outputs = model(features, training=True)
@@ -179,22 +188,15 @@ class ImageSegmentationTask(base_task.Task):
 
       # For mixed_precision policy, when LossScaleOptimizer is used, loss is
       # scaled for numerical stability.
-      if isinstance(
-          optimizer, tf.keras.mixed_precision.experimental.LossScaleOptimizer):
+      if isinstance(optimizer, tf.keras.mixed_precision.LossScaleOptimizer):
         scaled_loss = optimizer.get_scaled_loss(scaled_loss)
 
     tvars = model.trainable_variables
     grads = tape.gradient(scaled_loss, tvars)
     # Scales back gradient before apply_gradients when LossScaleOptimizer is
     # used.
-    if isinstance(
-        optimizer, tf.keras.mixed_precision.experimental.LossScaleOptimizer):
+    if isinstance(optimizer, tf.keras.mixed_precision.LossScaleOptimizer):
       grads = optimizer.get_unscaled_gradients(grads)
-
-    # Apply gradient clipping.
-    if self.task_config.gradient_clip_norm > 0:
-      grads, _ = tf.clip_by_global_norm(
-          grads, self.task_config.gradient_clip_norm)
     optimizer.apply_gradients(list(zip(grads, tvars)))
 
     logs = {self.loss: loss}
@@ -217,10 +219,20 @@ class ImageSegmentationTask(base_task.Task):
     """
     features, labels = inputs
 
+    input_partition_dims = self.task_config.eval_input_partition_dims
+    if input_partition_dims:
+      strategy = tf.distribute.get_strategy()
+      features = strategy.experimental_split_to_logical_devices(
+          features, input_partition_dims)
+
     outputs = self.inference_step(features, model)
     outputs = tf.nest.map_structure(lambda x: tf.cast(x, tf.float32), outputs)
-    loss = self.build_losses(model_outputs=outputs, labels=labels,
-                             aux_losses=model.losses)
+
+    if self.task_config.validation_data.resize_eval_groundtruth:
+      loss = self.build_losses(model_outputs=outputs, labels=labels,
+                               aux_losses=model.losses)
+    else:
+      loss = 0
 
     logs = {self.loss: loss}
     logs.update({self.miou_metric.name: (labels, outputs)})

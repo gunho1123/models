@@ -63,9 +63,10 @@ class BASNetModel(tf.keras.Model):
     if self.decoder:
       features = self.decoder(features)
     if self.refinement:
-      features['ref'] = self.refinement(features['0'])
+      features['ref'] = self.refinement(features['7'])
 
     return features
+    #return features['ref']
 
   @property
   def checkpoint_items(self):
