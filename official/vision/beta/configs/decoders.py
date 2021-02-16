@@ -53,6 +53,16 @@ class ASPP(hyperparams.Config):
   pool_kernel_size: Optional[List[int]] = None  # Use global average pooling.
 
 @dataclasses.dataclass
+class FOV(hyperparams.Config):
+  """FOV config."""
+  level: int = 4
+  dilation_rates: int = 12
+  kernel_size: int = 3
+  dropout_rate: float = 0.5
+  num_filters: int = 1024
+
+
+@dataclasses.dataclass
 class BASNet_De(hyperparams.Config):
   """BASNet_De config."""
   use_separable_conv: bool = False
@@ -70,4 +80,5 @@ class Decoder(hyperparams.OneOfConfig):
   nasfpn: NASFPN = NASFPN()
   identity: Identity = Identity()
   aspp: ASPP = ASPP()
+  fov: FOV = FOV()
   basnet_de: BASNet_De = BASNet_De()

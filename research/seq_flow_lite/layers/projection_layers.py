@@ -39,6 +39,10 @@ class ProjectionLayer(base_layers.BaseLayer):
     _get_params("max_seq_len", 0)
     _get_params("add_eos_tag", False)
     _get_params("add_bos_tag", False)
+<<<<<<< HEAD
+=======
+    _get_params("hashtype", "murmur")
+>>>>>>> upstream/master
     _get_params("split_on_space", True)
     _get_params("token_separators", "")
     _get_params("vocabulary", "")
@@ -56,6 +60,10 @@ class ProjectionLayer(base_layers.BaseLayer):
         input=inputs,
         feature_size=self.feature_size,
         max_splits=self.max_seq_len - 1,
+<<<<<<< HEAD
+=======
+        hashtype=self.hashtype,
+>>>>>>> upstream/master
         distortion_probability=self.distortion_probability,
         split_on_space=self.split_on_space,
         token_separators=self.token_separators,
@@ -69,7 +77,11 @@ class ProjectionLayer(base_layers.BaseLayer):
     if self.mode not in modes and self.max_seq_len > 0:
       short_by = self.max_seq_len - tf.shape(projection)[1]
       projection = tf.pad(projection, [[0, 0], [0, short_by], [0, 0]])
+<<<<<<< HEAD
       batch_size = inputs.get_shape().as_list()[0]
+=======
+      batch_size = self.get_batch_dimension(inputs)
+>>>>>>> upstream/master
       projection = tf.reshape(projection,
                               [batch_size, self.max_seq_len, self.feature_size])
     if self.mode in modes:

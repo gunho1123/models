@@ -85,6 +85,18 @@ def build_decoder(input_specs,
         norm_epsilon=norm_activation_config.norm_epsilon,
         activation=norm_activation_config.activation,
         kernel_regularizer=l2_regularizer)
+  elif decoder_type == 'fov':
+    decoder = decoders.FOV(
+        level=decoder_cfg.level,
+        dilation_rates=decoder_cfg.dilation_rates,
+        kernel_size=decoder_cfg.kernel_size,
+        num_filters=decoder_cfg.num_filters,
+        dropout_rate=decoder_cfg.dropout_rate,
+        use_sync_bn=norm_activation_config.use_sync_bn,
+        norm_momentum=norm_activation_config.norm_momentum,
+        norm_epsilon=norm_activation_config.norm_epsilon,
+        activation=norm_activation_config.activation,
+        kernel_regularizer=l2_regularizer)
   else:
     raise ValueError('Decoder {!r} not implement'.format(decoder_type))
 

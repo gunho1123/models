@@ -15,6 +15,7 @@
 # ==============================================================================
 """Decoders package definition."""
 
+from official.vision.beta.modeling.decoders.fov import FOV
 from official.vision.beta.modeling.decoders.aspp import ASPP
 from official.vision.beta.modeling.decoders.fpn import FPN
 from official.vision.beta.modeling.decoders.basnet_de import BASNet_De

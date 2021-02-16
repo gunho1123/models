@@ -52,6 +52,7 @@ def create_model(model, model_config, features, mode):
   """Creates a sequence labeling model."""
   keras_model = model.Encoder(model_config, mode)
   logits = keras_model(features["projection"], features["seq_length"])
+<<<<<<< HEAD
   if not model_config["multilabel"]:
     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=features["label"], logits=logits)
@@ -60,11 +61,28 @@ def create_model(model, model_config, features, mode):
         labels=features["label"], logits=logits)
   loss = tf.reduce_mean(loss)
   loss += tf.add_n(keras_model.losses)
+=======
+  if mode != tf.estimator.ModeKeys.PREDICT:
+    if not model_config["multilabel"]:
+      loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+          labels=features["label"], logits=logits)
+    else:
+      loss = tf.nn.sigmoid_cross_entropy_with_logits(
+          labels=features["label"], logits=logits)
+    loss = tf.reduce_mean(loss)
+    loss += tf.add_n(keras_model.losses)
+  else:
+    loss = None
+>>>>>>> upstream/master
 
   return (loss, logits)
 
 
+<<<<<<< HEAD
 def create_optimizer(loss, runner_config):
+=======
+def create_optimizer(loss, runner_config, params):
+>>>>>>> upstream/master
   """Returns a train_op using Adam optimizer."""
   learning_rate = tf.train.exponential_decay(
       learning_rate=runner_config["learning_rate"],
@@ -73,7 +91,11 @@ def create_optimizer(loss, runner_config):
       decay_rate=runner_config["learning_rate_decay_rate"],
       staircase=True)
   optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+<<<<<<< HEAD
   if FLAGS.use_tpu:
+=======
+  if params["use_tpu"]:
+>>>>>>> upstream/master
     optimizer = tf.tpu.CrossShardOptimizer(optimizer)
 
   return optimizer.minimize(loss, global_step=tf.train.get_global_step())
@@ -87,7 +109,10 @@ def model_fn_builder(runner_config):
 
   def model_fn(features, mode, params):
     """The `model_fn` for TPUEstimator."""
+<<<<<<< HEAD
     del params
+=======
+>>>>>>> upstream/master
     label_ids = None
     if mode != tf.estimator.ModeKeys.PREDICT:
       label_ids = features["label"]
@@ -96,7 +121,11 @@ def model_fn_builder(runner_config):
     loss, logits = create_model(model, model_config, features, mode)
 
     if mode == tf.estimator.ModeKeys.TRAIN:
+<<<<<<< HEAD
       train_op = create_optimizer(loss, runner_config)
+=======
+      train_op = create_optimizer(loss, runner_config, params)
+>>>>>>> upstream/master
       return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(
           mode=mode, loss=loss, train_op=train_op)
     elif mode == tf.estimator.ModeKeys.EVAL:
@@ -108,8 +137,21 @@ def model_fn_builder(runner_config):
       eval_metrics = (metric_fn, [loss, label_ids, logits])
       return tf.compat.v1.estimator.tpu.TPUEstimatorSpec(
           mode=mode, loss=loss, eval_metrics=eval_metrics)
+<<<<<<< HEAD
     else:
       assert False, "Expected to be called in TRAIN or EVAL mode."
+=======
+    elif mode == tf.estimator.ModeKeys.PREDICT:
+      predictions = {"logits": logits}
+      if not runner_config["model_config"]["multilabel"]:
+        predictions["predictions"] = tf.nn.softmax(logits)
+      else:
+        predictions["predictions"] = tf.math.sigmoid(logits)
+      return tf.compat.v1.estimator.EstimatorSpec(
+          mode=mode, predictions=predictions)
+    else:
+      assert False, "Expected to be called in TRAIN, EVAL, or PREDICT mode."
+>>>>>>> upstream/master
 
   return model_fn
 

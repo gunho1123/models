@@ -1,0 +1,128 @@
+evaluation:
+  epochs_between_evals: 1
+  skip_eval: false
+  steps: null
+export:
+  checkpoint: null
+  destination: null
+mode: train_and_eval
+model:
+  learning_rate:
+    boundaries: [30, 60, 80]
+    decay_epochs: null
+    decay_rate: null
+    examples_per_epoch: 1281167
+    initial_lr: 0.1
+    multipliers: [0.000390625, 3.90625e-05, 3.90625e-06, 3.90625e-07]
+    name: stepwise
+    scale_by_batch_size: 0.00390625
+    staircase: null
+    warmup_epochs: 5
+  loss:
+    label_smoothing: 0.1
+    name: sparse_categorical_crossentropy
+  model_params:
+    batch_size: null
+    num_classes: 1000
+    rescale_inputs: false
+    use_l2_regularizer: true
+  name: resnet
+  num_classes: 1000
+  optimizer:
+    beta_1: null
+    beta_2: null
+    decay: 0.9
+    epsilon: 0.001
+    lookahead: null
+    momentum: 0.9
+    moving_average_decay: null
+    name: momentum
+    nesterov: null
+model_dir: ./
+model_name: null
+runtime:
+  all_reduce_alg: null
+  batchnorm_spatial_persistent: true
+  dataset_num_private_threads: null
+  default_shard_dim: -1
+  distribution_strategy: mirrored
+  enable_xla: false
+  gpu_thread_mode: null
+  loss_scale: null
+  mixed_precision_dtype: null
+  num_cores_per_replica: 1
+  num_gpus: 8
+  num_packs: 1
+  per_gpu_thread_count: 0
+  run_eagerly: null
+  task_index: -1
+  tpu: null
+  worker_hosts: null
+train:
+  callbacks:
+    enable_backup_and_restore: false
+    enable_checkpoint_and_export: true
+    enable_tensorboard: true
+    enable_time_history: true
+  epochs: 90
+  metrics: [accuracy, top_5]
+  resume_checkpoint: true
+  set_epoch_loop: false
+  steps: null
+  tensorboard:
+    track_lr: true
+    write_model_weights: false
+  time_history:
+    log_steps: 100
+train_dataset:
+  augmenter:
+    name: null
+    params: null
+  batch_size: 256
+  builder: records
+  cache: false
+  data_dir: /data/ImageNet2012/tfrecord/train_val
+  download: false
+  dtype: float16
+  file_shuffle_buffer_size: 1024
+  filenames: null
+  image_size: 224
+  mean_subtract: true
+  name: imagenet2012
+  num_channels: 3
+  num_classes: 1000
+  num_devices: 1
+  num_examples: 1281167
+  one_hot: false
+  shuffle_buffer_size: 10000
+  skip_decoding: true
+  split: train
+  standardize: true
+  tf_data_service: null
+  use_per_replica_batch_size: true
+validation_dataset:
+  augmenter:
+    name: null
+    params: null
+  batch_size: 256
+  builder: records
+  cache: false
+  data_dir: /data/ImageNet2012/tfrecord/train_val
+  download: false
+  dtype: float16
+  file_shuffle_buffer_size: 1024
+  filenames: null
+  image_size: 224
+  mean_subtract: true
+  name: imagenet2012
+  num_channels: 3
+  num_classes: 1000
+  num_devices: 1
+  num_examples: 50000
+  one_hot: false
+  shuffle_buffer_size: 10000
+  skip_decoding: true
+  split: validation
+  standardize: true
+  tf_data_service: null
+  use_per_replica_batch_size: true

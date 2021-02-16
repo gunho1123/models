@@ -31,21 +31,21 @@ layers = tf.keras.layers
 # Specifications for different ResNet variants.
 # Each entry specifies block configurations of the particular ResNet variant.
 # Each element in the block configuration is in the following format:
-# (num_filters, maxpool_stride, block_repeats)
+# (num_filters, maxpool_stride, dilation_rate, block_repeats)
 VGGNET_SPECS = {
     16: [
-        (64,  2,  2),
-        (128, 2,  2),
-        (256, 2,  3),
-        (512, 1,  3),
-        (512, 1,  3),
+        (64,  2,  1,  2),
+        (128, 2,  1,  2),
+        (256, 2,  1,  3),
+        (512, 1,  1,  3),
+        (512, 1,  2,  3),
     ],
     19: [
-        (64,  2,  2),
-        (128, 2,  2),
-        (256, 2,  4),
-        (512, 1,  4),
-        (512, 1,  4),
+        (64,  2,  1,  2),
+        (128, 2,  1,  2),
+        (256, 2,  1,  4),
+        (512, 1,  1,  4),
+        (512, 1,  2,  4),
     ],
 }
 
@@ -113,15 +113,17 @@ class DilatedVGGNet(tf.keras.Model):
     x = inputs
 
     endpoints = {}
+    #endpoints['0'] = x
     for i, spec in enumerate(VGGNET_SPECS[model_id]):
       x = self._block_group(
           inputs=x,
           filters=spec[0],
           strides=1,
           maxpool_stride=spec[1],
-          block_repeats=spec[2],
-          name='block_group_l{}'.format(i + 2))
-      endpoints[str(i + 2)] = x
+          dilation_rate=spec[2],
+          block_repeats=spec[3],
+          name='block_group_l{}'.format(i + 1))
+      endpoints[str(i)] = x
 
     self._output_specs = {l: endpoints[l].get_shape() for l in endpoints}
 
@@ -132,6 +134,7 @@ class DilatedVGGNet(tf.keras.Model):
                    filters,
                    strides,
                    maxpool_stride,
+                   dilation_rate,
                    block_repeats=1,
                    name='block_group'):
     """Creates one group of blocks for the ResNet model.
@@ -155,6 +158,7 @@ class DilatedVGGNet(tf.keras.Model):
       x = block_fn(
           filters=filters,
           strides=strides,
+          dilation_rate=dilation_rate,
           kernel_initializer=self._kernel_initializer,
           kernel_regularizer=self._kernel_regularizer,
           bias_regularizer=self._bias_regularizer,

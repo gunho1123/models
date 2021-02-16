@@ -1,0 +1,17 @@
+python deeplab/train.py \
+  --logtostderr \
+  --training_number_of_steps="20000" \
+  --train_split="train_aug" \
+  --model_variant="xception_65" \
+  --atrous_rates=6 \
+  --atrous_rates=12 \
+  --atrous_rates=18 \
+  --output_stride=16 \
+  --decoder_output_stride=4 \
+  --train_crop_size=256,256 \
+  --train_batch_size=1 \
+  --num_clones=1 \
+  --dataset="duts" \
+  --tf_inital_checkpoint="/home/ghpark/xception65_ImageNet" \
+  --train_logdir="/home/ghpark/deeplab_tf1" \
+  --dataset_dir="/data/DUTS/DUTS_TR_hflip_TFRecords" \

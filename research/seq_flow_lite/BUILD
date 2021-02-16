@@ -1,8 +1,18 @@
 licenses(["notice"])
 
 package(
+<<<<<<< HEAD
     default_visibility = [
         "//:__subpackages__",
+=======
+    default_visibility = [":friends"],
+)
+
+package_group(
+    name = "friends",
+    packages = [
+        "//...",
+>>>>>>> upstream/master
     ],
 )
 

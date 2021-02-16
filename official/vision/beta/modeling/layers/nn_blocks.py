@@ -60,6 +60,7 @@ class ConvBlock(tf.keras.layers.Layer):
   def __init__(self,
                filters,
                strides,
+               dilation_rate,
                kernel_initializer='VarianceScaling',
                kernel_regularizer=None,
                bias_regularizer=None,
@@ -91,6 +92,7 @@ class ConvBlock(tf.keras.layers.Layer):
 
     self._filters = filters
     self._strides = strides
+    self._dilation_rate = dilation_rate
     self._use_sync_bn = use_sync_bn
     self._activation = activation
     self._kernel_initializer = kernel_initializer
@@ -110,16 +112,17 @@ class ConvBlock(tf.keras.layers.Layer):
     self._activation_fn = tf_utils.get_activation(activation)
 
   def build(self, input_shape):
-    self._conv1 = tf.keras.layers.Conv2D(
+    self._conv0 = tf.keras.layers.Conv2D(
         filters=self._filters,
         kernel_size=3,
         strides=self._strides,
+        dilation_rate=self._dilation_rate,
         padding='same',
-        use_bias=False,  # (gunho) True
+        use_bias=False,
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)
-    self._norm1 = self._norm(
+    self._norm0 = self._norm(
         axis=self._bn_axis,
         momentum=self._norm_momentum,
         epsilon=self._norm_epsilon)
@@ -130,6 +133,7 @@ class ConvBlock(tf.keras.layers.Layer):
     config = {
         'filters': self._filters,
         'strides': self._strides,
+        'dilation_rate': self._dilation_rate,
         'kernel_initializer': self._kernel_initializer,
         'kernel_regularizer': self._kernel_regularizer,
         'bias_regularizer': self._bias_regularizer,
@@ -142,8 +146,8 @@ class ConvBlock(tf.keras.layers.Layer):
     return dict(list(base_config.items()) + list(config.items()))
 
   def call(self, inputs, training=None):
-    x = self._conv1(inputs)
-    x = self._norm1(x)
+    x = self._conv0(inputs)
+    x = self._norm0(x)
     x = self._activation_fn(x)
 
     return x
