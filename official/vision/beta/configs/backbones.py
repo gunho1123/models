@@ -22,6 +22,7 @@ import dataclasses
 from official.modeling import hyperparams
 
 
+
 @dataclasses.dataclass
 class ResNet(hyperparams.Config):
   """ResNet config."""
@@ -78,6 +79,11 @@ class BASNet_En(hyperparams.Config):
   """BASNet Encoder config."""
   model_id: str = 'BASNet_En'
 
+@dataclasses.dataclass
+class DilatedVGGNet(hyperparams.Config):
+  """DilatedVGGNet config."""
+  model_id: int = 16
+
 
 @dataclasses.dataclass
 class Backbone(hyperparams.OneOfConfig):
@@ -98,5 +104,6 @@ class Backbone(hyperparams.OneOfConfig):
   revnet: RevNet = RevNet()
   efficientnet: EfficientNet = EfficientNet()
   spinenet: SpineNet = SpineNet()
-  basnet_en: BASNet_En = BASNet_En()
+  dilated_vggnet: DilatedVGGNet = DilatedVGGNet()   # (gunho)
+  basnet_en: BASNet_En = BASNet_En()  # (gunho)
   mobilenet: MobileNet = MobileNet()

@@ -138,15 +138,17 @@ class BASNetTask(base_task.Task):
   def build_metrics(self, training=False):
     """Gets streaming metrics for training/validation."""
     metrics = []
+    
     if training:
-      metrics.append(basnet_metrics.MeanAbsoluteError(
-          name='mean_absolute_error',
-          rescale_predictions=False,
+      metrics = []
+      """
+      metrics.append(basnet_metrics.BASNetEvaluator(
+          name='temp',
           dtype=tf.float32))
+      """
     else:
-      self.mae_metric = basnet_metrics.MeanAbsoluteError(
-          name='val_mean_absolute_error',
-          rescale_predictions=False,
+      self.temp_metric = basnet_metrics.BASNetEvaluator(
+          name='val_temp',
           dtype=tf.float32)
 
     return metrics
@@ -203,10 +205,11 @@ class BASNetTask(base_task.Task):
           grads, self.task_config.gradient_clip_norm)
     optimizer.apply_gradients(list(zip(grads, tvars)))
     logs = {self.loss: loss}
+    """
     if metrics:
-      self.process_metrics(metrics, labels, outputs)
+      self.process_metrics(metrics, labels, outputs['ref'])
       logs.update({m.name: m.result() for m in metrics})
-
+    """
     return logs
 
   def validation_step(self, inputs, model, metrics=None):
@@ -228,7 +231,7 @@ class BASNetTask(base_task.Task):
     logs = {self.loss: loss}
     
 
-    logs.update({self.mae_metric.name: (labels, outputs['ref'])})
+    logs.update({self.temp_metric.name: (labels, outputs['ref'])})
 
     if metrics:
       self.process_metrics(metrics, labels, outputs['ref'])
@@ -242,11 +245,15 @@ class BASNetTask(base_task.Task):
 
   def aggregate_logs(self, state=None, step_outputs=None):
     if state is None:
-      self.mae_metric.reset_states()
-      state = self.mae_metric
-    self.mae_metric.update_state(step_outputs[self.mae_metric.name][0],
-                                  step_outputs[self.mae_metric.name][1])
+      self.temp_metric.reset_states()
+      state = self.temp_metric
+    self.temp_metric.update_state(step_outputs[self.temp_metric.name][0],
+                                  step_outputs[self.temp_metric.name][1])
+    
     return state
 
   def reduce_aggregated_logs(self, aggregated_logs):
-    return {self.mae_metric.name: self.mae_metric.result().numpy()}
+    #return {self.temp_metric.name: self.temp_metric.result().numpy()}
+    return {'MAE': self.temp_metric.result()[0],
+            'F_beta': self.temp_metric.result()[1]}
+    #return self.temp_metric.result()

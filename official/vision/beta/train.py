@@ -29,9 +29,9 @@ from official.core import train_lib
 from official.core import train_utils
 from official.modeling import performance
 
-import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
+#import os
+#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2, 3"
 
 
 

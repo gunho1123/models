@@ -7,9 +7,11 @@
 set -e
 
 EXPERIMENT_TYPE="basnet_duts"
-#CHECKPOINT_PATH="/home/ghpark/ckpt_8_bsi_basnet/ckpt-259843"
-CHECKPOINT_PATH="/home/ghpark/ckpt_bsi_basnet/ckpt-393062"
-EXPORT_DIR_PATH="/home/ghpark/export_basnet"
+#CHECKPOINT_PATH="/home/ghpark/ckpt_bsi_basnet/ckpt-393062"
+#CHECKPOINT_PATH="/home/gunho1123/ckpt_bsi_basnet_ckpt_0127"
+CHECKPOINT_PATH="/home/gunho1123/ckpt_bsi_basnet_ckpt"
+#CHECKPOINT_PATH="/home/gunho1123/ckpt_bsi_basnet"
+EXPORT_DIR_PATH="/home/gunho1123/export_basnet"
 
 python3 export_saved_model.py --experiment=${EXPERIMENT_TYPE} \
                    --export_dir=${EXPORT_DIR_PATH}/ \

@@ -53,6 +53,101 @@ def _maybe_downsample(x: tf.Tensor,
 
   return x + 0.
 
+@tf.keras.utils.register_keras_serializable(package='Vision')
+class ConvBlock(tf.keras.layers.Layer):
+  """A block for VGGNet."""
+
+  def __init__(self,
+               filters,
+               strides,
+               kernel_initializer='VarianceScaling',
+               kernel_regularizer=None,
+               bias_regularizer=None,
+               activation='relu',
+               use_sync_bn=False,
+               norm_momentum=0.99,
+               norm_epsilon=0.001,
+               **kwargs):
+    """A vgg block with BN after convolutions.
+
+    Args:
+      filters: `int` number of filters for the first two convolutions. Note that
+        the third and final convolution will use 4 times as many filters.
+      strides: `int` block stride. If greater than 1, this block will ultimately
+        downsample the input.
+      kernel_initializer: kernel_initializer for convolutional layers.
+      kernel_regularizer: tf.keras.regularizers.Regularizer object for Conv2D.
+                          Default to None.
+      bias_regularizer: tf.keras.regularizers.Regularizer object for Conv2d.
+                        Default to None.
+      activation: `str` name of the activation function.
+      use_sync_bn: if True, use synchronized batch normalization.
+      norm_momentum: `float` normalization omentum for the moving average.
+      norm_epsilon: `float` small float added to variance to avoid dividing by
+        zero.
+      **kwargs: keyword arguments to be passed.
+    """
+    super(ConvBlock, self).__init__(**kwargs)
+
+    self._filters = filters
+    self._strides = strides
+    self._use_sync_bn = use_sync_bn
+    self._activation = activation
+    self._kernel_initializer = kernel_initializer
+    self._norm_momentum = norm_momentum
+    self._norm_epsilon = norm_epsilon
+    self._kernel_regularizer = kernel_regularizer
+    self._bias_regularizer = bias_regularizer
+
+    if use_sync_bn:
+      self._norm = tf.keras.layers.experimental.SyncBatchNormalization
+    else:
+      self._norm = tf.keras.layers.BatchNormalization
+    if tf.keras.backend.image_data_format() == 'channels_last':
+      self._bn_axis = -1
+    else:
+      self._bn_axis = 1
+    self._activation_fn = tf_utils.get_activation(activation)
+
+  def build(self, input_shape):
+    self._conv1 = tf.keras.layers.Conv2D(
+        filters=self._filters,
+        kernel_size=3,
+        strides=self._strides,
+        padding='same',
+        use_bias=False,  # (gunho) True
+        kernel_initializer=self._kernel_initializer,
+        kernel_regularizer=self._kernel_regularizer,
+        bias_regularizer=self._bias_regularizer)
+    self._norm1 = self._norm(
+        axis=self._bn_axis,
+        momentum=self._norm_momentum,
+        epsilon=self._norm_epsilon)
+
+    super(ConvBlock, self).build(input_shape)
+
+  def get_config(self):
+    config = {
+        'filters': self._filters,
+        'strides': self._strides,
+        'kernel_initializer': self._kernel_initializer,
+        'kernel_regularizer': self._kernel_regularizer,
+        'bias_regularizer': self._bias_regularizer,
+        'activation': self._activation,
+        'use_sync_bn': self._use_sync_bn,
+        'norm_momentum': self._norm_momentum,
+        'norm_epsilon': self._norm_epsilon
+    }
+    base_config = super(ConvBlock, self).get_config()
+    return dict(list(base_config.items()) + list(config.items()))
+
+  def call(self, inputs, training=None):
+    x = self._conv1(inputs)
+    x = self._norm1(x)
+    x = self._activation_fn(x)
+
+    return x
+
 
 @tf.keras.utils.register_keras_serializable(package='Vision')
 class ResidualBlock(tf.keras.layers.Layer):
@@ -143,7 +238,7 @@ class ResidualBlock(tf.keras.layers.Layer):
         kernel_size=3,
         strides=self._strides,
         padding='same',
-        use_bias=True,  # (gunho) True
+        use_bias=False,  # (gunho) True
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)
@@ -157,7 +252,7 @@ class ResidualBlock(tf.keras.layers.Layer):
         kernel_size=3,
         strides=1,
         padding='same',
-        use_bias=True,  # (gunho) True
+        use_bias=False,  # (gunho) True
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)

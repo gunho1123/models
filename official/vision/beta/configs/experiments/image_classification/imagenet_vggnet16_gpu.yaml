@@ -1,0 +1,28 @@
+runtime:
+  distribution_strategy: 'mirrored'
+  mixed_precision_dtype: 'float16'
+  loss_scale: 'dynamic'
+  num_gpus: 8
+task:
+  model:
+    num_classes: 1001
+    input_size: [224, 224, 3]
+    backbone:
+      type: 'dilated_vggnet'
+      dilated_vggnet:
+        model_id: 16
+    #dropout_rate: 0.5
+    norm_activation:
+      use_sync_bn: False
+  losses:
+    l2_weight_decay: 0.0001
+    one_hot: True
+    label_smoothing: 0.1
+  train_data:
+    is_training: True
+    dtype: 'float16'
+  validation_data:
+    is_training: False
+    dtype: 'float16'
+    drop_remainder: False
+

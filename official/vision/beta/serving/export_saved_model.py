@@ -36,20 +36,21 @@ model_fn = imported.signatures['serving_default']
 output = model_fn(input_images)
 """
 
+import os
+
 from absl import app
 from absl import flags
+import tensorflow as tf
+from official.core import train_utils
 
 from official.common import registry_imports  # pylint: disable=unused-import
 from official.core import exp_factory
 from official.modeling import hyperparams
-<<<<<<< HEAD
 from official.vision.beta import configs
 from official.vision.beta.serving import detection
 from official.vision.beta.serving import image_classification
 from official.vision.beta.serving import basnet
-=======
 from official.vision.beta.serving import export_saved_model_lib
->>>>>>> upstream/master
 
 FLAGS = flags.FLAGS
 
@@ -82,7 +83,6 @@ flags.DEFINE_string(
     'of the input to the model.')
 
 
-<<<<<<< HEAD
 def export_inference_graph(input_type, batch_size, input_image_size, params,
                            checkpoint_path, export_dir):
   """Exports inference graph for the model specified in the exp config.
@@ -170,8 +170,6 @@ def export_inference_graph(input_type, batch_size, input_image_size, params,
   train_utils.serialize_config(params, export_dir)
 
 
-=======
->>>>>>> upstream/master
 def main(_):
 
   params = exp_factory.get_exp_config(FLAGS.experiment)
@@ -185,6 +183,16 @@ def main(_):
   params.validate()
   params.lock()
 
+  # (gunho)
+  export_inference_graph(
+      input_type=FLAGS.input_type,
+      batch_size=FLAGS.batch_size,
+      input_image_size=[int(x) for x in FLAGS.input_image_size.split(',')],
+      params=params,
+      checkpoint_path=FLAGS.checkpoint_path,
+      export_dir=FLAGS.export_dir)
+
+  """
   export_saved_model_lib.export_inference_graph(
       input_type=FLAGS.input_type,
       batch_size=FLAGS.batch_size,
@@ -194,7 +202,7 @@ def main(_):
       export_dir=FLAGS.export_dir,
       export_checkpoint_subdir='checkpoint',
       export_saved_model_subdir='saved_model')
-
+  """
 
 if __name__ == '__main__':
   app.run(main)

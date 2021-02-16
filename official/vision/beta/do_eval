@@ -4,7 +4,8 @@
 
 
 #python3 train.py --experiment=basnet_duts --mode=eval --model_dir=/home/ghpark/ckpt_bsi_basnet/ckpt-393062 --config_file=./configs/experiments/basnet/basnet_dut_gpu_eval.yaml
-python3 train.py --experiment=basnet_duts --mode=eval --model_dir=/home/ghpark/ckpt_bsi_basnet --config_file=./configs/experiments/basnet/basnet_dut_gpu_eval.yaml
+python3 train.py --experiment=basnet_duts --mode=eval --model_dir=/home/gunho1123/ckpt_bsi_basnet_ckpt_0129 --config_file=./configs/experiments/basnet/basnet_dut_gpu_eval.yaml
+#python3 train.py --experiment=basnet_duts --mode=eval --model_dir=/home/gunho1123/ckpt_bsi_basnet_ckpt/ckpt-217635 --config_file=./configs/experiments/basnet/basnet_dut_gpu_eval.yaml
 
 
 

@@ -4,9 +4,8 @@ from PIL import Image
 
 
 
-export_dir_path = "/home/ghpark/export_basnet/saved_model"
-
-input_images = np.array(Image.open('img8_test.jpg'))
+export_dir_path = "/home/gunho1123/export_basnet/saved_model"
+input_images = np.array(Image.open('pgh.jpg'))
 #print(input_images.shape)
 
 height = input_images.shape[0]

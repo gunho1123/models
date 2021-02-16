@@ -155,9 +155,9 @@ class ResNet(tf.keras.Model):
     if stem_type == 'v0':
       x = layers.Conv2D(
           filters=int(64 * self._depth_multiplier),
-          kernel_size=3,  # (gunho) 7 -> 3
-          strides=1,      # (gunho) 2 -> 1
-          use_bias=True,  # (gunho) True
+          kernel_size=7,  # (gunho) 7 -> 3
+          strides=2,      # (gunho) 2 -> 1
+          use_bias=False,  # (gunho) True
           padding='same',
           kernel_initializer=self._kernel_initializer,
           kernel_regularizer=self._kernel_regularizer,
@@ -213,7 +213,7 @@ class ResNet(tf.keras.Model):
     else:
       raise ValueError('Stem type {} not supported.'.format(stem_type))
     # (gunho) Delete Maxpool
-    #x = layers.MaxPool2D(pool_size=3, strides=2, padding='same')(x)
+    x = layers.MaxPool2D(pool_size=3, strides=2, padding='same')(x)
 
     endpoints = {}
     for i, spec in enumerate(RESNET_SPECS[model_id]):

@@ -108,7 +108,7 @@ DUTS_INPUT_PATH_BASE_VAL = '/data/DUTS/DUTS_TE_TFRecords/'
 def basnet_duts() -> cfg.ExperimentConfig:
   """Image segmentation on imagenet with resnet deeplabv3."""
   train_batch_size = 16
-  eval_batch_size = 8
+  eval_batch_size = 16
   steps_per_epoch = DUTS_TRAIN_EXAMPLES // train_batch_size
   config = cfg.ExperimentConfig(
       task=BASNetTask(
@@ -150,7 +150,7 @@ def basnet_duts() -> cfg.ExperimentConfig:
           steps_per_loop=steps_per_epoch,
           summary_interval=steps_per_epoch,
           checkpoint_interval=steps_per_epoch,
-          train_steps=300 * steps_per_epoch,  # (gunho) more epochs
+          train_steps=500 * steps_per_epoch,  # (gunho) more epochs
           validation_steps=DUTS_VAL_EXAMPLES // eval_batch_size,  # No validation in BASNet
           validation_interval=steps_per_epoch,
           optimizer_config=optimization.OptimizationConfig({
@@ -164,8 +164,8 @@ def basnet_duts() -> cfg.ExperimentConfig:
               },
               'learning_rate': {
                   'type': 'stepwise',
-                  'stepwise': {'boundaries': [70*steps_per_epoch, 160*steps_per_epoch],
-                               'values': [0.001, 0.001, 0.0001]}
+                  'stepwise': {'boundaries': [70*steps_per_epoch, 100*steps_per_epoch, 150*steps_per_epoch],
+                               'values': [0.01, 0.001, 0.001, 0.0001]}
               }
           })),
       restrictions=[

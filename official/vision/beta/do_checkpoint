@@ -1,7 +1,8 @@
 #rm -rf /home/ghpark/ckpt_basnet
 
 
-python3 train.py --experiment=basnet_duts --mode=train --model_dir=/home/gunho1123/ckpt_bsi_basnet_ckpt --config_file=./configs/experiments/basnet/basnet_dut_gpu.yaml
+#python3 train.py --experiment=basnet_duts --mode=train --model_dir=/home/gunho1123/ckpt_bsi_basnet_ckpt --config_file=./configs/experiments/basnet/basnet_dut_gpu.yaml
+python3 train.py --experiment=basnet_duts --mode=train --model_dir=/home/gunho1123/ckpt_bsi_basnet_ckpt_0129 --config_file=./configs/experiments/basnet/basnet_dut_gpu.yaml
 
 #python3 train.py --experiment=basnet_duts --mode=train --model_dir=/home/gunho1123/ckpt_bsi_basnet_init --config_file=./configs/experiments/basnet/basnet_dut_gpu.yaml 1> output.log 2> error.log
 #python3 train.py --experiment=basnet_duts --mode=train --model_dir=/home/gunho1123/ckpt_bsi_basnet_init --config_file=./configs/experiments/basnet/basnet_dut_gpu.yaml 2> error.log

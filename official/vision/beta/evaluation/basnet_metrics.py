@@ -15,6 +15,79 @@
 """Metrics for segmentation."""
 
 import tensorflow as tf
+import numpy as np
+
+
+class BASNetEvaluator(tf.keras.metrics.Metric):
+  """Mean Absolute Error metric for BASNet.
+
+  This class utilizes tf.keras.metrics.MeanAbsoluteError to perform batched mean absolute error when
+  both input images and groundtruth masks are resized to the same size
+  (rescale_predictions=False). It doesn't support computing mean absolute error on groundtruth original
+  sizes, in which case, each prediction is rescaled back to the original image
+  size.
+  """
+
+  def __init__(
+      self, name=None, dtype=None):
+    """Constructs BASNet evaluator class.
+
+    Args:
+      name: `str`, name of the metric instance..
+      dtype: data type of the metric result.
+    """
+    self._thresholds=0.82
+    self._mae = tf.keras.metrics.MeanAbsoluteError(dtype=dtype)
+    self._precision = tf.keras.metrics.Precision(thresholds=self._thresholds)
+    self._recall = tf.keras.metrics.Recall(thresholds=self._thresholds)
+    self._beta_square = 0.3
+
+    super(BASNetEvaluator, self).__init__(
+        name=name, dtype=dtype)
+
+  def update_state(self, y_true, y_pred):
+    """Updates metic state.
+
+    Args:
+      y_true: Tensor [batch, width, height, 1], groundtruth masks.
+      y_pred: Tensor [batch, width_p, height_p, num_classes], predicated masks.
+    """
+    self._precision.update_state(y_true, y_pred)
+    self._recall.update_state(y_true, y_pred)
+    self._mae.update_state(y_true, y_pred)
+
+
+
+  def result(self):
+    #precision = self._precision.result().numpy()
+    #recall = self._recall.result().numpy()
+    #self.mae = self._mae.result().numpy()
+
+    precision = self._precision.result()
+    recall = self._recall.result()
+    self.mae = self._mae.result()
+
+
+    self.f_beta = (1+self._beta_square)*precision*recall / (self._beta_square*precision+recall)
+
+    metrics_dict = {}
+    metrics_dict['mae'] = self.mae
+    metrics_dict['F_beta'] = self.f_beta
+
+    temp_array = [self.mae, self.f_beta]
+    temp_array = np.array(temp_array)
+
+    #return metrics_dict
+    return self.mae, self.f_beta
+    #return temp_array
+
+  def reset_states(self):
+    self._precision.reset_states()
+    self._recall.reset_states()
+    self._mae.reset_states()
+
+
+
 
 
 class MeanAbsoluteError(tf.keras.metrics.MeanAbsoluteError):
