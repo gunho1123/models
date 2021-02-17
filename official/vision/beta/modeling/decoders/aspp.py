@@ -27,6 +27,7 @@ class ASPP(tf.keras.layers.Layer):
   def __init__(self,
                level,
                dilation_rates,
+               stem_type='v3',
                num_filters=256,
                pool_kernel_size=None,
                use_sync_bn=False,
@@ -63,6 +64,7 @@ class ASPP(tf.keras.layers.Layer):
     self._config_dict = {
         'level': level,
         'dilation_rates': dilation_rates,
+        'stem_type': stem_type,
         'num_filters': num_filters,
         'pool_kernel_size': pool_kernel_size,
         'use_sync_bn': use_sync_bn,
@@ -85,6 +87,7 @@ class ASPP(tf.keras.layers.Layer):
     self.aspp = keras_cv.layers.SpatialPyramidPooling(
         output_channels=self._config_dict['num_filters'],
         dilation_rates=self._config_dict['dilation_rates'],
+        stem_type=self._config_dict['stem_type'],
         pool_kernel_size=pool_kernel_size,
         use_sync_bn=self._config_dict['use_sync_bn'],
         batchnorm_momentum=self._config_dict['norm_momentum'],
@@ -113,7 +116,13 @@ class ASPP(tf.keras.layers.Layer):
     """
     outputs = {}
     level = str(self._config_dict['level'])
-    outputs[level] = self.aspp(inputs[level])
+    filters = self._config_dict['num_filters']
+    if self._config_dict['stem_type'] == 'v2':
+      output = self.aspp(inputs[level])
+      for i in range(len(self._config_dict['dilation_rates'])):
+        outputs['dlv2_{}'.format(i)] = output[:,:,:,filters*i:filters*(i+1)]
+    else:
+      outputs[level] = self.aspp(inputs[level])
     return outputs
 
   def get_config(self):

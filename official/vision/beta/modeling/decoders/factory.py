@@ -69,6 +69,7 @@ def build_decoder(input_specs,
     decoder = decoders.ASPP(
         level=decoder_cfg.level,
         dilation_rates=decoder_cfg.dilation_rates,
+        stem_type=decoder_cfg.stem_type,
         num_filters=decoder_cfg.num_filters,
         pool_kernel_size=decoder_cfg.pool_kernel_size,
         dropout_rate=decoder_cfg.dropout_rate,

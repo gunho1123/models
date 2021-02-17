@@ -30,6 +30,7 @@ class SpatialPyramidPooling(tf.keras.layers.Layer):
       self,
       output_channels,
       dilation_rates,
+      stem_type='v3',
       pool_kernel_size=None,
       use_sync_bn=False,
       batchnorm_momentum=0.99,
@@ -66,6 +67,7 @@ class SpatialPyramidPooling(tf.keras.layers.Layer):
 
     self.output_channels = output_channels
     self.dilation_rates = dilation_rates
+    self.stem_type = stem_type
     self.use_sync_bn = use_sync_bn
     self.batchnorm_momentum = batchnorm_momentum
     self.batchnorm_epsilon = batchnorm_epsilon
@@ -94,19 +96,20 @@ class SpatialPyramidPooling(tf.keras.layers.Layer):
     else:
       bn_axis = 1
 
-    conv_sequential = tf.keras.Sequential([
-        tf.keras.layers.Conv2D(
-            filters=self.output_channels, kernel_size=(1, 1),
-            kernel_initializer=self.kernel_initializer,
-            kernel_regularizer=self.kernel_regularizer,
-            use_bias=False),
-        bn_op(
-            axis=bn_axis,
-            momentum=self.batchnorm_momentum,
-            epsilon=self.batchnorm_epsilon),
-        tf.keras.layers.Activation(self.activation)
-    ])
-    self.aspp_layers.append(conv_sequential)
+    if self.stem_type == 'v3':
+      conv_sequential = tf.keras.Sequential([
+          tf.keras.layers.Conv2D(
+              filters=self.output_channels, kernel_size=(1, 1),
+              kernel_initializer=self.kernel_initializer,
+              kernel_regularizer=self.kernel_regularizer,
+              use_bias=False),
+          bn_op(
+              axis=bn_axis,
+              momentum=self.batchnorm_momentum,
+              epsilon=self.batchnorm_epsilon),
+          tf.keras.layers.Activation(self.activation)
+      ])
+      self.aspp_layers.append(conv_sequential)
 
     for dilation_rate in self.dilation_rates:
       conv_sequential = tf.keras.Sequential([
@@ -120,48 +123,48 @@ class SpatialPyramidPooling(tf.keras.layers.Layer):
           tf.keras.layers.Activation(self.activation)])
       self.aspp_layers.append(conv_sequential)
 
-    if self.pool_kernel_size is None:
-      pool_sequential = tf.keras.Sequential([
-          tf.keras.layers.GlobalAveragePooling2D(),
-          tf.keras.layers.Reshape((1, 1, channels))])
-    else:
-      pool_sequential = tf.keras.Sequential([
-          tf.keras.layers.AveragePooling2D(self.pool_kernel_size)])
+    if self.stem_type == 'v3':
+      if self.pool_kernel_size is None:
+        pool_sequential = tf.keras.Sequential([
+            tf.keras.layers.GlobalAveragePooling2D(),
+            tf.keras.layers.Reshape((1, 1, channels))])
+      else:
+        pool_sequential = tf.keras.Sequential([
+            tf.keras.layers.AveragePooling2D(self.pool_kernel_size)])
 
-    pool_sequential.add(
-        tf.keras.Sequential([
-            tf.keras.layers.Conv2D(
-                filters=self.output_channels,
-                kernel_size=(1, 1),
-                kernel_initializer=self.kernel_initializer,
-                kernel_regularizer=self.kernel_regularizer,
-                use_bias=False),
-            bn_op(
-                axis=bn_axis,
-                momentum=self.batchnorm_momentum,
-                epsilon=self.batchnorm_epsilon),
-            tf.keras.layers.Activation(self.activation),
-            tf.keras.layers.experimental.preprocessing.Resizing(
-                height,
-                width,
-                interpolation=self.interpolation,
-                dtype=tf.float32)
-        ]))
+      pool_sequential.add(
+          tf.keras.Sequential([
+              tf.keras.layers.Conv2D(
+                  filters=self.output_channels,
+                  kernel_size=(1, 1),
+                  kernel_initializer=self.kernel_initializer,
+                  kernel_regularizer=self.kernel_regularizer,
+                  use_bias=False),
+              bn_op(
+                  axis=bn_axis,
+                  momentum=self.batchnorm_momentum,
+                  epsilon=self.batchnorm_epsilon),
+              tf.keras.layers.Activation(self.activation),
+              tf.keras.layers.experimental.preprocessing.Resizing(
+                  height,
+                  width,
+                  interpolation=self.interpolation,
+                  dtype=tf.float32)
+          ]))
+      self.aspp_layers.append(pool_sequential)
 
-    self.aspp_layers.append(pool_sequential)
-
-    self.projection = tf.keras.Sequential([
-        tf.keras.layers.Conv2D(
-            filters=self.output_channels, kernel_size=(1, 1),
-            kernel_initializer=self.kernel_initializer,
-            kernel_regularizer=self.kernel_regularizer,
-            use_bias=False),
-        bn_op(
-            axis=bn_axis,
-            momentum=self.batchnorm_momentum,
-            epsilon=self.batchnorm_epsilon),
-        tf.keras.layers.Activation(self.activation),
-        tf.keras.layers.Dropout(rate=self.dropout)])
+      self.projection = tf.keras.Sequential([
+          tf.keras.layers.Conv2D(
+              filters=self.output_channels, kernel_size=(1, 1),
+              kernel_initializer=self.kernel_initializer,
+              kernel_regularizer=self.kernel_regularizer,
+              use_bias=False),
+          bn_op(
+              axis=bn_axis,
+              momentum=self.batchnorm_momentum,
+              epsilon=self.batchnorm_epsilon),
+          tf.keras.layers.Activation(self.activation),
+          tf.keras.layers.Dropout(rate=self.dropout)])
 
   def call(self, inputs, training=None):
     if training is None:
@@ -170,13 +173,15 @@ class SpatialPyramidPooling(tf.keras.layers.Layer):
     for layer in self.aspp_layers:
       result.append(tf.cast(layer(inputs, training=training), inputs.dtype))
     result = tf.concat(result, axis=-1)
-    result = self.projection(result, training=training)
+    if self.stem_type == 'v3':
+      result = self.projection(result, training=training)
     return result
 
   def get_config(self):
     config = {
         'output_channels': self.output_channels,
         'dilation_rates': self.dilation_rates,
+        'stem_type': self.stem_type,
         'pool_kernel_size': self.pool_kernel_size,
         'use_sync_bn': self.use_sync_bn,
         'batchnorm_momentum': self.batchnorm_momentum,

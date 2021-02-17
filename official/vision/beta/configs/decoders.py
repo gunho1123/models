@@ -48,8 +48,10 @@ class ASPP(hyperparams.Config):
   """ASPP config."""
   level: int = 4
   dilation_rates: List[int] = dataclasses.field(default_factory=list)
+  stem_type: str = 'v3'
   dropout_rate: float = 0.0
   num_filters: int = 256
+  use_sync_bn: bool = False
   pool_kernel_size: Optional[List[int]] = None  # Use global average pooling.
 
 @dataclasses.dataclass

@@ -130,6 +130,20 @@ class SegmentationHead(tf.keras.layers.Layer):
 
       self._dlv3p_norm = bn_op(
           name='segmentation_head_deeplabv3p_fusion_norm', **bn_kwargs)
+    elif self._config_dict['feature_fusion'] == 'deeplabv2':
+      # Deeplabv2 feature fusion layers.
+      self._dlv2_conv = conv_op(
+          kernel_size=1,
+          padding='same',
+          use_bias=False,
+          kernel_initializer=tf.keras.initializers.RandomNormal(stddev=0.01),
+          kernel_regularizer=self._config_dict['kernel_regularizer'],
+          name='segmentation_head_deeplabv2_fusion_conv',
+          filters=self._config_dict['low_level_num_filters'])
+
+      self._dlv2_norm = bn_op(
+          name='segmentation_head_deeplabv2_fusion_norm', **bn_kwargs)
+
 
     # Segmentation head layers.
     self._convs = []
@@ -186,6 +200,11 @@ class SegmentationHead(tf.keras.layers.Layer):
     elif self._config_dict['feature_fusion'] == 'pyramid_fusion':
       x = nn_layers.pyramid_feature_fusion(decoder_output,
                                            self._config_dict['level'])
+    elif self._config_dict['feature_fusion'] == 'deeplabv2':
+      # deeplabv2 feature fusion
+      for k in decoder_output.keys():
+        decoder_output[k] = self._activation(self._dlv2_norm(self._dlv2_conv(decoder_output[k])))
+        decoder_output[k] = self._classifier(decoder_output[k])
     else:
       x = decoder_output[str(self._config_dict['level'])]
 
@@ -193,9 +212,15 @@ class SegmentationHead(tf.keras.layers.Layer):
       x = conv(x)
       x = norm(x)
       x = self._activation(x)
-    x = spatial_transform_ops.nearest_upsampling(
-        x, scale=self._config_dict['upsample_factor'])
-    return self._classifier(x)
+   
+    if self._config_dict['feature_fusion'] == 'deeplabv2':
+      out = sum(decoder_output.values())
+    else:
+      x = spatial_transform_ops.nearest_upsampling(
+          x, scale=self._config_dict['upsample_factor'])
+      out = self._classifier(x)
+
+    return out
 
   def get_config(self):
     return self._config_dict
