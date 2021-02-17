@@ -154,7 +154,7 @@ def seg_deeplabv1_pascal() -> cfg.ExperimentConfig:
                   use_sync_bn=True)),
           losses=Losses(l2_weight_decay=1e-4),
           train_data=DataConfig(
-              input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'trainaug*'),
+              input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'train_aug*'),
               # TODO(arashwan): test changing size to 513 to match deeplab.
               output_size=[512, 512],
               is_training=True,
@@ -250,7 +250,7 @@ def seg_deeplabv2_pascal() -> cfg.ExperimentConfig:
                   use_sync_bn=True)),
           losses=Losses(l2_weight_decay=1e-4),
           train_data=DataConfig(
-              input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'trainaug*'),
+              input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'train_aug*'),
               # TODO(arashwan): test changing size to 513 to match deeplab.
               output_size=[512, 512],
               is_training=True,
