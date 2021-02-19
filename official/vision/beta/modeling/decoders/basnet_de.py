@@ -123,13 +123,13 @@ class BASNet_De(tf.keras.Model):
             kernel_regularizer=kernel_regularizer,
             bias_regularizer=bias_regularizer,
             activation='relu',
-            use_sync_bn=False,
+            use_sync_bn=use_sync_bn,
             norm_momentum=0.99,
             norm_epsilon=0.001
             )(x)
 
       output = layers.Conv2D(
-          filters=1, kernel_size=3, strides=1, use_bias=True, padding='same',
+          filters=1, kernel_size=3, strides=1, use_bias=False, padding='same',
           kernel_initializer=kernel_initializer,
           kernel_regularizer=kernel_regularizer,
           bias_regularizer=bias_regularizer

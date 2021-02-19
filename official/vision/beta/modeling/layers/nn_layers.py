@@ -87,7 +87,7 @@ class ConvBNReLU(tf.keras.layers.Layer):
         strides=self._strides,
         padding='same',
         dilation_rate=self._dilation,
-        use_bias=True,  # (gunho) True
+        use_bias=False,
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)
