@@ -66,10 +66,6 @@ class BASNetTask(base_task.Task):
       status.assert_consumed()
     else:
       ckpt_items = {}
-      if 'resnet34' in self.task_config.init_checkpoint_modules:
-        ckpt_items.update(backbone=model.backbone)
-        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-        print(ckpt_items['backbone'].net)
       if 'backbone' in self.task_config.init_checkpoint_modules:
         ckpt_items.update(backbone=model.backbone)
       if 'decoder' in self.task_config.init_checkpoint_modules:

@@ -99,8 +99,8 @@ def basnet() -> cfg.ExperimentConfig:
 # DUTS Dataset
 DUTS_TRAIN_EXAMPLES = 21106
 DUTS_VAL_EXAMPLES = 5019
-DUTS_INPUT_PATH_BASE_TR = '/data/DUTS/DUTS_TR_hflip_TFRecords/'
-DUTS_INPUT_PATH_BASE_VAL = '/data/DUTS/DUTS_TE_TFRecords/'
+DUTS_INPUT_PATH_BASE_TR = '/home/datasets/DUTS/DUTS_TR_hflip_TFRecords/'
+DUTS_INPUT_PATH_BASE_VAL = '/home/datasets/DUTS/DUTS_TE_TFRecords/'
 
 
 

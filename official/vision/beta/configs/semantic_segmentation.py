@@ -125,7 +125,7 @@ PASCAL_INPUT_PATH_BASE = '/home/datasets/pascal_voc_seg'
 @exp_factory.register_config_factory('seg_deeplabv1_pascal')
 def seg_deeplabv1_pascal() -> cfg.ExperimentConfig:
   """Image segmentation on imagenet with vggnet deeplabv1."""
-  train_batch_size = 16
+  train_batch_size = 32
   eval_batch_size = 8
   steps_per_epoch = PASCAL_TRAIN_EXAMPLES // train_batch_size
   
@@ -160,7 +160,7 @@ def seg_deeplabv1_pascal() -> cfg.ExperimentConfig:
               is_training=True,
               global_batch_size=train_batch_size,
               aug_scale_min=0.5,
-              aug_scale_max=2.0),
+              aug_scale_max=1.5),
           validation_data=DataConfig(
               input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'val*'),
               output_size=[512, 512],
@@ -176,7 +176,7 @@ def seg_deeplabv1_pascal() -> cfg.ExperimentConfig:
           steps_per_loop=steps_per_epoch,
           summary_interval=steps_per_epoch,
           checkpoint_interval=steps_per_epoch,
-          train_steps=45 * steps_per_epoch,
+          train_steps=18 * steps_per_epoch,
           validation_steps=PASCAL_VAL_EXAMPLES // eval_batch_size,
           validation_interval=steps_per_epoch,
           optimizer_config=optimization.OptimizationConfig({
@@ -187,19 +187,10 @@ def seg_deeplabv1_pascal() -> cfg.ExperimentConfig:
                   }
               },
               'learning_rate': {
-                  'type': 'polynomial',
-                  'polynomial': {
-                      'initial_learning_rate': 0.007,
-                      'decay_steps': 45 * steps_per_epoch,
-                      'end_learning_rate': 0.0,
-                      'power': 0.9
-                  }
-              },
-              'warmup': {
-                  'type': 'linear',
-                  'linear': {
-                      'warmup_steps': 5 * steps_per_epoch,
-                      'warmup_learning_rate': 0
+                  'type': 'stepwise',
+                  'stepwise': {
+                      'boundaries': [6*steps_per_epoch, 12*steps_per_epoch],
+                      'values': [0.001, 0.0001, 0.00001]
                   }
               }
           })),
@@ -233,7 +224,7 @@ def seg_deeplabv2_pascal() -> cfg.ExperimentConfig:
               num_classes=21,
               input_size=[None, None, 3],
               backbone=backbones.Backbone(
-                  type='dilated_vggnet', dilated_resnet=backbones.DilatedVGGNet(
+                  type='dilated_vggnet', dilated_vggnet=backbones.DilatedVGGNet(
                       model_id=16)),
               decoder=decoders.Decoder(
                   type='aspp', aspp=decoders.ASPP(
@@ -256,7 +247,7 @@ def seg_deeplabv2_pascal() -> cfg.ExperimentConfig:
               is_training=True,
               global_batch_size=train_batch_size,
               aug_scale_min=0.5,
-              aug_scale_max=2.0),
+              aug_scale_max=1.5),
           validation_data=DataConfig(
               input_path=os.path.join(PASCAL_INPUT_PATH_BASE, 'val*'),
               output_size=[512, 512],
