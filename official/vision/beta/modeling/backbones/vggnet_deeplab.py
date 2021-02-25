@@ -113,7 +113,7 @@ class DilatedVGGNet(tf.keras.Model):
     x = inputs
 
     endpoints = {}
-    #endpoints['0'] = x
+    endpoints['0'] = x
     for i, spec in enumerate(VGGNET_SPECS[model_id]):
       x = self._block_group(
           inputs=x,
@@ -123,7 +123,7 @@ class DilatedVGGNet(tf.keras.Model):
           dilation_rate=spec[2],
           block_repeats=spec[3],
           name='block_group_l{}'.format(i + 1))
-      endpoints[str(i)] = x
+      endpoints[str(i+1)] = x
 
     self._output_specs = {l: endpoints[l].get_shape() for l in endpoints}
 

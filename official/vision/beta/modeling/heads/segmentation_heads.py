@@ -140,9 +140,36 @@ class SegmentationHead(tf.keras.layers.Layer):
           kernel_regularizer=self._config_dict['kernel_regularizer'],
           name='segmentation_head_deeplabv2_fusion_conv',
           filters=self._config_dict['low_level_num_filters'])
-
+      
       self._dlv2_norm = bn_op(
           name='segmentation_head_deeplabv2_fusion_norm', **bn_kwargs)
+    elif self._config_dict['feature_fusion'] == 'deeplabv1_msc':
+      # Deeplabv1 feature fusion layers for multi-scale prediction.
+      self._dlv1_msc_convs33 = []
+      self._dlv1_msc_convs11 = []
+      self._dlv1_msc_norms   = []
+      for i in range(self._config_dict['low_level']+2):
+        conv_name = 'segmentation_head_deeplabv1_msc_fusion_conv33_{}'.format(i)
+        self._dlv1_msc_convs33.append(
+            conv_op(
+                name=conv_name,
+                filters=self._config_dict['low_level_num_filters'],
+                strides=2**(3-i) if 3-i>0 else 1,
+                **conv_kwargs))
+        conv_name = 'segmentation_head_deeplabv1_msc_fusion_conv11_{}'.format(i)
+        self._dlv1_msc_convs11.append(
+            conv_op(
+                name=conv_name,
+                kernel_size=1,
+                padding='same',
+                use_bias=False,
+                kernel_initializer=tf.keras.initializers.RandomNormal(stddev=0.01),
+                kernel_regularizer=self._config_dict['kernel_regularizer'],
+                filters=self._config_dict['low_level_num_filters']))
+ 
+        norm_name = 'segmentation_head_deeplabv1_msc_fusion_norm_{}'.format(i)
+        self._dlv1_msc_norms.append(bn_op(name=norm_name, **bn_kwargs))
+
 
 
     # Segmentation head layers.
@@ -205,6 +232,26 @@ class SegmentationHead(tf.keras.layers.Layer):
       for k in decoder_output.keys():
         decoder_output[k] = self._activation(self._dlv2_norm(self._dlv2_conv(decoder_output[k])))
         decoder_output[k] = self._classifier(decoder_output[k])
+    elif self._config_dict['feature_fusion'] == 'deeplabv1_msc':
+      # deeplabv1 feature fusion for multi-scale prediction
+      x = decoder_output[str(self._config_dict['level'])]
+      msc_outputs=[]
+      for i in range(self._config_dict['low_level']+1):
+        x = backbone_output[str(i)]
+        x = self._dlv1_msc_norms[i](self._dlv1_msc_convs33[i](x))
+        x = self._activation(x)
+        x = self._dlv1_msc_norms[i](self._dlv1_msc_convs11[i](x))
+        x = self._activation(x)
+        msc_outputs.append(x)
+      
+      x = decoder_output[str(self._config_dict['level'])]
+      x = self._dlv1_msc_norms[i+1](self._dlv1_msc_convs33[i+1](x))
+      x = self._activation(x)
+      x = self._dlv1_msc_norms[i+1](self._dlv1_msc_convs11[i+1](x))
+      x = self._activation(x)
+      msc_outputs.append(x)
+      
+      x = tf.concat(msc_outputs, axis=self._bn_axis)
     else:
       x = decoder_output[str(self._config_dict['level'])]
 

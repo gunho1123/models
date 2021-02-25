@@ -133,7 +133,7 @@ def seg_deeplabv1_pascal() -> cfg.ExperimentConfig:
   kernel_size = 3
   
   output_stride = 16
-  level = int(np.math.log2(output_stride))
+  level = int(np.math.log2(output_stride))+1
   
   config = cfg.ExperimentConfig(
       task=SemanticSegmentationTask(
@@ -187,12 +187,21 @@ def seg_deeplabv1_pascal() -> cfg.ExperimentConfig:
                   }
               },
               'learning_rate': {
-                  'type': 'stepwise',
-                  'stepwise': {
-                      'boundaries': [6*steps_per_epoch, 12*steps_per_epoch],
-                      'values': [0.001, 0.0001, 0.00001]
+                  'type': 'polynomial',
+                  'polynomial': {
+                      'initial_learning_rate': 0.007,
+                      'decay_steps': 45 * steps_per_epoch,
+                      'end_learning_rate': 0.0,
+                      'power': 0.9
                   }
               }
+              #'learning_rate': {
+              #    'type': 'stepwise',
+              #    'stepwise': {
+              #        'boundaries': [6*steps_per_epoch, 12*steps_per_epoch],
+              #        'values': [0.001, 0.0001, 0.00001]
+              #    }
+              #}
           })),
       restrictions=[
           'task.train_data.is_training != None',
@@ -653,3 +662,110 @@ def seg_deeplabv3plus_cityscapes() -> cfg.ExperimentConfig:
       ])
 
   return config
+
+
+# Cityscapes Dataset (Download and process the dataset yourself)
+COCO_TRAIN_EXAMPLES = 118287
+COCO_VAL_EXAMPLES = 5000
+COCO_INPUT_PATH_BASE = '/home/gunho1123/coco/'
+
+
+
+@exp_factory.register_config_factory('seg_deeplabv2_coco')
+def seg_deeplabv2_pascal() -> cfg.ExperimentConfig:
+  """Image segmentation on imagenet with vggnet & resnet deeplabv2."""
+  train_batch_size = 16
+  eval_batch_size = 8
+  steps_per_epoch = COCO_TRAIN_EXAMPLES // train_batch_size
+  
+  # for Large FOV
+  fov_dilation_rates = 12
+  kernel_size = 3
+  
+  # for ASPP
+  aspp_dilation_rates = [6, 12, 18, 24]
+
+  output_stride = 16
+  level = int(np.math.log2(output_stride))
+  
+  config = cfg.ExperimentConfig(
+      task=SemanticSegmentationTask(
+          model=SemanticSegmentationModel(
+              num_classes=21,
+              input_size=[None, None, 3],
+              backbone=backbones.Backbone(
+                  type='dilated_vggnet', dilated_vggnet=backbones.DilatedVGGNet(
+                      model_id=16)),
+              decoder=decoders.Decoder(
+                  type='aspp', aspp=decoders.ASPP(
+                      level=level, dilation_rates=aspp_dilation_rates,
+                      stem_type='v2', num_filters=1024, use_sync_bn=True)),
+              head=SegmentationHead(
+                  level=level, num_convs=0,
+                  low_level_num_filters=1024,
+                  feature_fusion='deeplabv2'),
+              norm_activation=common.NormActivation(
+                  activation='swish',
+                  norm_momentum=0.9997,
+                  norm_epsilon=1e-3,
+                  use_sync_bn=True)),
+          losses=Losses(l2_weight_decay=1e-4),
+          train_data=DataConfig(
+              input_path=os.path.join(COCO_INPUT_PATH_BASE, 'tfrecord-*'),
+              # TODO(arashwan): test changing size to 513 to match deeplab.
+              output_size=[512, 512],
+              is_training=True,
+              global_batch_size=train_batch_size,
+              aug_scale_min=0.5,
+              aug_scale_max=1.5),
+          validation_data=DataConfig(
+              input_path=os.path.join(COCO_INPUT_PATH_BASE, 'tfrecord-*'),
+              output_size=[512, 512],
+              is_training=False,
+              global_batch_size=eval_batch_size,
+              resize_eval_groundtruth=False,
+              groundtruth_padded_size=[512, 512],
+              drop_remainder=False),
+          # resnet101
+          init_checkpoint='/home/gunho1123/ckpt_vggnet16_deeplab/',
+          init_checkpoint_modules='backbone'),
+      trainer=cfg.TrainerConfig(
+          steps_per_loop=steps_per_epoch,
+          summary_interval=steps_per_epoch,
+          checkpoint_interval=steps_per_epoch,
+          train_steps=45 * steps_per_epoch,
+          validation_steps=PASCAL_VAL_EXAMPLES // eval_batch_size,
+          validation_interval=steps_per_epoch,
+          optimizer_config=optimization.OptimizationConfig({
+              'optimizer': {
+                  'type': 'sgd',
+                  'sgd': {
+                      'momentum': 0.9
+                  }
+              },
+              'learning_rate': {
+                  'type': 'polynomial',
+                  'polynomial': {
+                      'initial_learning_rate': 0.007,
+                      'decay_steps': 45 * steps_per_epoch,
+                      'end_learning_rate': 0.0,
+                      'power': 0.9
+                  }
+              },
+              'warmup': {
+                  'type': 'linear',
+                  'linear': {
+                      'warmup_steps': 5 * steps_per_epoch,
+                      'warmup_learning_rate': 0
+                  }
+              }
+          })),
+      restrictions=[
+          'task.train_data.is_training != None',
+          'task.validation_data.is_training != None'
+      ])
+
+  return config
+
+
+

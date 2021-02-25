@@ -1,0 +1,13 @@
+runtime:
+  #distribution_strategy: 'one_device'
+  distribution_strategy: 'mirrored'
+  mixed_precision_dtype: 'float32'
+  num_gpus: 8
+task:
+  model:
+    head:
+      #level: 5
+      num_convs: 0
+      low_level: 4
+      low_level_num_filters: 128
+      feature_fusion: 'deeplabv1_msc'
