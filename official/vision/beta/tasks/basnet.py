@@ -23,7 +23,8 @@ from official.core import input_reader
 from official.core import task_factory
 from official.vision.beta.configs import basnet as exp_cfg
 from official.vision.beta.dataloaders import basnet_input # Prepare input datas
-from official.vision.beta.evaluation import basnet_metrics
+#from official.vision.beta.evaluation import basnet_metrics
+from official.vision.beta.evaluation import basnet_evaluator
 from official.vision.beta.losses import basnet_losses
 from official.vision.beta.modeling import factory
 
@@ -82,14 +83,10 @@ class BASNetTask(base_task.Task):
     """Builds BASNet input."""
 
     input_size = self.task_config.model.input_size
-    #ignore_label = self.task_config.losses.ignore_label
 
     decoder = basnet_input.Decoder()
     parser = basnet_input.Parser(
         output_size=input_size[:2],
-        #ignore_label=ignore_label,
-        #resize_eval_groundtruth=params.resize_eval_groundtruth,
-        #groundtruth_padded_size=params.groundtruth_padded_size,
         aug_rand_hflip=False,
         #aug_scale_min=params.aug_scale_min,
         #aug_scale_max=params.aug_scale_max,
@@ -137,15 +134,8 @@ class BASNetTask(base_task.Task):
     
     if training:
       metrics = []
-      """
-      metrics.append(basnet_metrics.BASNetEvaluator(
-          name='temp',
-          dtype=tf.float32))
-      """
     else:
-      self.temp_metric = basnet_metrics.BASNetEvaluator(
-          name='val_temp',
-          dtype=tf.float32)
+      self.basnet_metric = basnet_evaluator.BASNetEvaluator()
 
     return metrics
 
@@ -201,11 +191,6 @@ class BASNetTask(base_task.Task):
           grads, self.task_config.gradient_clip_norm)
     optimizer.apply_gradients(list(zip(grads, tvars)))
     logs = {self.loss: loss}
-    """
-    if metrics:
-      self.process_metrics(metrics, labels, outputs['ref'])
-      logs.update({m.name: m.result() for m in metrics})
-    """
     return logs
 
   def validation_step(self, inputs, model, metrics=None):
@@ -227,12 +212,7 @@ class BASNetTask(base_task.Task):
     logs = {self.loss: loss}
     
 
-    logs.update({self.temp_metric.name: (labels, outputs['ref'])})
-
-    if metrics:
-      self.process_metrics(metrics, labels, outputs['ref'])
-      logs.update({m.name: m.result() for m in metrics})
-
+    logs.update({self.basnet_metric.name: (labels, outputs['ref'])})
     return logs    
 
   def inference_step(self, inputs, model):
@@ -241,15 +221,13 @@ class BASNetTask(base_task.Task):
 
   def aggregate_logs(self, state=None, step_outputs=None):
     if state is None:
-      self.temp_metric.reset_states()
-      state = self.temp_metric
-    self.temp_metric.update_state(step_outputs[self.temp_metric.name][0],
-                                  step_outputs[self.temp_metric.name][1])
+      self.basnet_metric.reset_states()
+      state = self.basnet_metric
+    self.basnet_metric.update_state(
+        step_outputs[self.basnet_metric.name][0],
+        step_outputs[self.basnet_metric.name][1])
     
     return state
 
   def reduce_aggregated_logs(self, aggregated_logs):
-    #return {self.temp_metric.name: self.temp_metric.result().numpy()}
-    return {'MAE': self.temp_metric.result()[0],
-            'F_beta': self.temp_metric.result()[1]}
-    #return self.temp_metric.result()
+    return self.basnet_metric.result()
