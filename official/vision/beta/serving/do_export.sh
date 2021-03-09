@@ -7,10 +7,7 @@
 set -e
 
 EXPERIMENT_TYPE="basnet_duts"
-#CHECKPOINT_PATH="/home/ghpark/ckpt_bsi_basnet/ckpt-393062"
-#CHECKPOINT_PATH="/home/gunho1123/ckpt_bsi_basnet_ckpt_0127"
-CHECKPOINT_PATH="/home/gunho1123/ckpt_bsi_basnet_ckpt"
-#CHECKPOINT_PATH="/home/gunho1123/ckpt_bsi_basnet"
+CHECKPOINT_PATH="/home/gunho1123/ckpt_basnet_wbias01"
 EXPORT_DIR_PATH="/home/gunho1123/export_basnet"
 
 python3 export_saved_model.py --experiment=${EXPERIMENT_TYPE} \
@@ -22,3 +19,5 @@ python3 export_saved_model.py --experiment=${EXPERIMENT_TYPE} \
                    --input_image_size=256,256 \
 
 python3 visualize_basnet.py
+
+
