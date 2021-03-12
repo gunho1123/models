@@ -38,11 +38,6 @@ output = model_fn(input_images)
 
 from absl import app
 from absl import flags
-<<<<<<< HEAD
-import tensorflow as tf
-from official.core import train_utils
-=======
->>>>>>> upstream/master
 
 from official.common import registry_imports  # pylint: disable=unused-import
 from official.core import exp_factory
@@ -92,11 +87,7 @@ def main(_):
 
   params.validate()
   params.lock()
-<<<<<<< HEAD
- 
-=======
 
->>>>>>> upstream/master
   export_saved_model_lib.export_inference_graph(
       input_type=FLAGS.input_type,
       batch_size=FLAGS.batch_size,
@@ -106,10 +97,6 @@ def main(_):
       export_dir=FLAGS.export_dir,
       export_checkpoint_subdir='checkpoint',
       export_saved_model_subdir='saved_model')
-<<<<<<< HEAD
-=======
-
->>>>>>> upstream/master
 
 if __name__ == '__main__':
   app.run(main)

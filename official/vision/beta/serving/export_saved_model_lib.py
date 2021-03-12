@@ -16,32 +16,17 @@
 r"""Vision models export utility function for serving/inference."""
 
 import os
-<<<<<<< HEAD
-
-import tensorflow as tf
-
-=======
 from typing import Optional, List
 
 import tensorflow as tf
 
 from official.core import config_definitions as cfg
 from official.core import export_base
->>>>>>> upstream/master
 from official.core import train_utils
 from official.vision.beta import configs
 from official.vision.beta.serving import detection
 from official.vision.beta.serving import image_classification
 from official.vision.beta.serving import semantic_segmentation
-<<<<<<< HEAD
-from official.vision.beta.serving import basnet
-
-
-def export_inference_graph(input_type, batch_size, input_image_size, params,
-                           checkpoint_path, export_dir,
-                           export_checkpoint_subdir=None,
-                           export_saved_model_subdir=None):
-=======
 
 
 def export_inference_graph(
@@ -55,7 +40,6 @@ def export_inference_graph(
     export_module: Optional[export_base.ExportModule] = None,
     export_checkpoint_subdir: Optional[str] = None,
     export_saved_model_subdir: Optional[str] = None):
->>>>>>> upstream/master
   """Exports inference graph for the model specified in the exp config.
 
   Saved model is stored at export_dir/saved_model, checkpoint is saved
@@ -68,13 +52,10 @@ def export_inference_graph(
     params: Experiment params.
     checkpoint_path: Trained checkpoint path or directory.
     export_dir: Export directory path.
-<<<<<<< HEAD
-=======
     num_channels: The number of input image channels.
     export_module: Optional export module to be used instead of using params
       to create one. If None, the params will be used to create an export
       module.
->>>>>>> upstream/master
     export_checkpoint_subdir: Optional subdirectory under export_dir
       to store checkpoint.
     export_saved_model_subdir: Optional subdirectory under export_dir
@@ -93,73 +74,6 @@ def export_inference_graph(
   else:
     output_saved_model_directory = export_dir
 
-<<<<<<< HEAD
-  if isinstance(params.task,
-                configs.image_classification.ImageClassificationTask):
-    export_module = image_classification.ClassificationModule(
-        params=params, batch_size=batch_size, input_image_size=input_image_size)
-  elif isinstance(params.task, configs.retinanet.RetinaNetTask) or isinstance(
-      params.task, configs.maskrcnn.MaskRCNNTask):
-    export_module = detection.DetectionModule(
-        params=params, batch_size=batch_size, input_image_size=input_image_size)
-  elif isinstance(params.task,
-                  configs.semantic_segmentation.SemanticSegmentationTask):
-    export_module = semantic_segmentation.SegmentationModule(
-        params=params, batch_size=batch_size, input_image_size=input_image_size)
-  elif isinstance(params.task, configs.basnet.BASNetTask):
-    print("Export BASNet Model")
-    export_module = basnet.BASNetModule(
-        params=params,
-        batch_size=batch_size,
-        input_image_size=input_image_size)
-  else:
-    raise ValueError('Export module not implemented for {} task.'.format(
-        type(params.task)))
-
-  model = export_module.build_model()
-
-  ckpt = tf.train.Checkpoint(model=model)
-
-  ckpt_dir_or_file = checkpoint_path
-  if tf.io.gfile.isdir(ckpt_dir_or_file):
-    ckpt_dir_or_file = tf.train.latest_checkpoint(ckpt_dir_or_file)
-  status = ckpt.restore(ckpt_dir_or_file).expect_partial()
-
-  if input_type == 'image_tensor':
-    input_signature = tf.TensorSpec(
-        shape=[batch_size, None, None, 3],
-        dtype=tf.uint8)
-    signatures = {
-        'serving_default':
-            export_module.inference_from_image_tensors.get_concrete_function(
-                input_signature)
-    }
-  elif input_type == 'image_bytes':
-    input_signature = tf.TensorSpec(shape=[batch_size], dtype=tf.string)
-    signatures = {
-        'serving_default':
-            export_module.inference_from_image_bytes.get_concrete_function(
-                input_signature)
-    }
-  elif input_type == 'tf_example':
-    input_signature = tf.TensorSpec(shape=[batch_size], dtype=tf.string)
-    signatures = {
-        'serving_default':
-            export_module.inference_from_tf_example.get_concrete_function(
-                input_signature)
-    }
-  else:
-    raise ValueError('Unrecognized `input_type`')
-
-  status.assert_existing_objects_matched()
-
-  ckpt.save(os.path.join(output_checkpoint_directory, 'ckpt'))
-
-  tf.saved_model.save(export_module,
-                      output_saved_model_directory,
-                      signatures=signatures)
-
-=======
   # TODO(arashwan): Offers a direct path to use ExportModule with Task objects.
   if not export_module:
     if isinstance(params.task,
@@ -196,5 +110,4 @@ def export_inference_graph(
 
   ckpt = tf.train.Checkpoint(model=export_module.model)
   ckpt.save(os.path.join(output_checkpoint_directory, 'ckpt'))
->>>>>>> upstream/master
   train_utils.serialize_config(params, export_dir)

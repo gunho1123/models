@@ -126,25 +126,16 @@ class ExportModule(export_base.ExportModule, metaclass=abc.ABCMeta):
       images = tf.nest.map_structure(
           tf.identity,
           tf.map_fn(
-<<<<<<< HEAD
-              _decode_tf_example,
-              elems=input_tensor,
-=======
               self._decode_tf_example,
               elems=inputs,
->>>>>>> upstream/master
               # Height/width of the shape of input images is unspecified (None)
               # at the time of decoding the example, but the shape will
               # be adjusted to conform to the input layer of the model,
               # by _run_inference_on_image_tensors() below.
               fn_output_signature=tf.TensorSpec(
-<<<<<<< HEAD
-                  shape=[None, None, 3], dtype=tf.uint8),
-=======
                   shape=[None] * len(self._input_image_size) +
                   [self._num_channels],
                   dtype=tf.uint8),
->>>>>>> upstream/master
               dtype=tf.uint8,
               parallel_iterations=32))
       images = tf.stack(images)
