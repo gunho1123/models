@@ -29,6 +29,7 @@ STDDEV_RGB = (0.229 * 255, 0.224 * 255, 0.225 * 255)
 class SegmentationModule(export_base.ExportModule):
   """Segmentation Module."""
 
+<<<<<<< HEAD
   def build_model(self):
     input_specs = tf.keras.layers.InputSpec(
         shape=[self._batch_size] + self._input_image_size + [3])
@@ -40,6 +41,17 @@ class SegmentationModule(export_base.ExportModule):
 
     return self._model
 
+=======
+  def _build_model(self):
+    input_specs = tf.keras.layers.InputSpec(
+        shape=[self._batch_size] + self._input_image_size + [3])
+
+    return factory.build_segmentation_model(
+        input_specs=input_specs,
+        model_config=self.params.task.model,
+        l2_regularizer=None)
+
+>>>>>>> upstream/master
   def _build_inputs(self, image):
     """Builds classification model inputs for serving."""
 
@@ -56,7 +68,11 @@ class SegmentationModule(export_base.ExportModule):
         aug_scale_max=1.0)
     return image
 
+<<<<<<< HEAD
   def _run_inference_on_image_tensors(self, images):
+=======
+  def serve(self, images):
+>>>>>>> upstream/master
     """Cast image to float and run inference.
 
     Args:
@@ -77,7 +93,11 @@ class SegmentationModule(export_base.ExportModule):
               )
           )
 
+<<<<<<< HEAD
     masks = self._model(images, training=False)
+=======
+    masks = self.inference_step(images)
+>>>>>>> upstream/master
     masks = tf.image.resize(masks, self._input_image_size, method='bilinear')
 
     return dict(predicted_masks=masks)

@@ -1,4 +1,4 @@
-# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """ALBERT (https://arxiv.org/abs/1810.04805) text encoder network."""
 # pylint: disable=g-classes-have-attributes
 import collections
@@ -39,7 +39,7 @@ class AlbertEncoder(tf.keras.Model):
 
   *Note* that the network is constructed by Keras Functional API.
 
-  Arguments:
+  Args:
     vocab_size: The size of the token vocabulary.
     embedding_width: The width of the word embeddings. If the embedding width is
       not equal to hidden size, embedding parameters will be factorized into two
@@ -133,7 +133,7 @@ class AlbertEncoder(tf.keras.Model):
               embeddings)
 
     data = embeddings
-    attention_mask = layers.SelfAttentionMask()([data, mask])
+    attention_mask = keras_nlp.layers.SelfAttentionMask()(data, mask)
     shared_layer = keras_nlp.layers.TransformerEncoderBlock(
         num_attention_heads=num_attention_heads,
         inner_dim=intermediate_size,

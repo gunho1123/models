@@ -1,4 +1,4 @@
-# Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """Test decoding utility methods."""
 
 import abc
@@ -62,12 +62,12 @@ class DecodingModuleTest(tf.test.TestCase):
   def test_get_shape_keep_last_dim(self):
     y = tf.constant(4.0)
     x = tf.ones([7, tf.cast(tf.sqrt(y), tf.int32), 2, 5])
-    shape = decoding_module.DecodingModule._get_shape_keep_last_dim(x)
+    shape = decoding_module.get_shape_keep_last_dim(x)
     self.assertAllEqual([None, None, None, 5], shape.as_list())
 
   def test_shape_list(self):
     x = tf.ones([7, 1])
-    shape = decoding_module.DecodingModule._shape_list(x)
+    shape = decoding_module.shape_list(x)
     self.assertAllEqual([7, 1], shape)
 
   def test_inf(self):

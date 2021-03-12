@@ -18,6 +18,7 @@ from typing import Optional, Tuple
 import dataclasses
 
 from official.core import config_definitions as cfg
+<<<<<<< HEAD
 from official.modeling.hyperparams import base_config
 
 
@@ -34,10 +35,28 @@ class TaskRoutine(base_config.Config):
 class MultiTaskConfig(base_config.Config):
   init_checkpoint: str = ""
   model: base_config.Config = None
+=======
+from official.modeling import hyperparams
+
+
+@dataclasses.dataclass
+class TaskRoutine(hyperparams.Config):
+  task_name: str = ""
+  task_config: cfg.TaskConfig = None
+  eval_steps: Optional[int] = None
+  task_weight: Optional[float] = 1.0
+
+
+@dataclasses.dataclass
+class MultiTaskConfig(hyperparams.Config):
+  init_checkpoint: str = ""
+  model: hyperparams.Config = None
+>>>>>>> upstream/master
   task_routines: Tuple[TaskRoutine, ...] = ()
 
 
 @dataclasses.dataclass
+<<<<<<< HEAD
 class MultiEvalExperimentConfig(base_config.Config):
   """An experiment config for single-task training and multi-task evaluation.
 
@@ -51,3 +70,12 @@ class MultiEvalExperimentConfig(base_config.Config):
   eval_tasks: MultiTaskConfig = MultiTaskConfig()
   trainer: cfg.TrainerConfig = cfg.TrainerConfig()
   runtime: cfg.RuntimeConfig = cfg.RuntimeConfig()
+=======
+class MultiEvalExperimentConfig(cfg.ExperimentConfig):
+  """An experiment config for single-task training and multi-task evaluation.
+
+  Attributes:
+    eval_tasks: individual evaluation tasks.
+  """
+  eval_tasks: MultiTaskConfig = MultiTaskConfig()
+>>>>>>> upstream/master

@@ -101,7 +101,7 @@ class RefUnet(tf.keras.Model):
           kernel_regularizer=self._kernel_regularizer,
           bias_regularizer=self._bias_regularizer,
           activation='relu',
-          use_sync_bn=False,
+          use_sync_bn=self._use_sync_bn,
           norm_momentum=0.99,
           norm_epsilon=0.001
           )(x)
@@ -121,7 +121,7 @@ class RefUnet(tf.keras.Model):
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer,
         activation='relu',
-        use_sync_bn=False,
+        use_sync_bn=self._use_sync_bn,
         norm_momentum=0.99,
         norm_epsilon=0.001
         )(x)
@@ -144,7 +144,7 @@ class RefUnet(tf.keras.Model):
           kernel_regularizer=self._kernel_regularizer,
           bias_regularizer=self._bias_regularizer,
           activation='relu',
-          use_sync_bn=False,
+          use_sync_bn=self._use_sync_bn,
           norm_momentum=0.99,
           norm_epsilon=0.001
           )(x)

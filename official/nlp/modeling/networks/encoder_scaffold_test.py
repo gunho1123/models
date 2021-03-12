@@ -1,4 +1,4 @@
-# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """Tests for EncoderScaffold network."""
 
 from absl.testing import parameterized
@@ -97,6 +97,7 @@ class EncoderScaffoldLayerClassTest(keras_parameterized.TestCase):
         hidden_cls=ValidatedTransformerLayer,
         hidden_cfg=hidden_cfg,
         embedding_cfg=embedding_cfg,
+        layer_norm_before_pooling=True,
         return_all_layer_outputs=return_all_layer_outputs)
     # Create the inputs (note that the first dimension is implicit).
     word_ids = tf.keras.Input(shape=(sequence_length,), dtype=tf.int32)
@@ -127,6 +128,8 @@ class EncoderScaffoldLayerClassTest(keras_parameterized.TestCase):
     # instantiated from the given config properly.
     self.assertNotEmpty(call_list)
     self.assertTrue(call_list[0], "The passed layer class wasn't instantiated.")
+
+    self.assertTrue(hasattr(test_network, "_output_layer_norm"))
 
   def test_network_creation_with_float16_dtype(self):
     tf.keras.mixed_precision.experimental.set_policy("mixed_float16")

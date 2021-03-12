@@ -24,7 +24,10 @@ from official.vision.detection.dataloader import anchor
 from official.vision.detection.dataloader import mode_keys
 from official.vision.detection.modeling import losses
 from official.vision.detection.modeling.architecture import factory
+<<<<<<< HEAD
 from official.vision.detection.modeling.architecture import keras_utils
+=======
+>>>>>>> upstream/master
 from official.vision.detection.modeling.maskrcnn_model import MaskrcnnModel
 from official.vision.detection.ops import postprocess_ops
 from official.vision.detection.ops import roi_ops
@@ -422,6 +425,7 @@ class OlnMaskModel(MaskrcnnModel):
   def build_model(self, params, mode):
     if self._keras_model is None:
       input_layers = self.build_input_layers(self._params, mode)
+<<<<<<< HEAD
       with keras_utils.maybe_enter_backend_graph():
         outputs = self.model_outputs(input_layers, mode)
 
@@ -430,5 +434,14 @@ class OlnMaskModel(MaskrcnnModel):
         assert model is not None, 'Fail to build tf.keras.Model.'
         model.optimizer = self.build_optimizer()
         self._keras_model = model
+=======
+      outputs = self.model_outputs(input_layers, mode)
+
+      model = tf.keras.models.Model(
+          inputs=input_layers, outputs=outputs, name='olnmask')
+      assert model is not None, 'Fail to build tf.keras.Model.'
+      model.optimizer = self.build_optimizer()
+      self._keras_model = model
+>>>>>>> upstream/master
 
     return self._keras_model

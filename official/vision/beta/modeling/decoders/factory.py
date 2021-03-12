@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""factory method."""
+"""Contains the factory method to create decoders."""
+
 # Import libraries
 import tensorflow as tf
 
@@ -26,13 +27,14 @@ def build_decoder(input_specs,
   """Builds decoder from a config.
 
   Args:
-    input_specs: `dict` input specifications. A dictionary consists of
+    input_specs: A `dict` of input specifications. A dictionary consists of
       {level: TensorShape} from a backbone.
     model_config: A OneOfConfig. Model config.
-    l2_regularizer: tf.keras.regularizers.Regularizer instance. Default to None.
+    l2_regularizer: A `tf.keras.regularizers.Regularizer` instance. Default to
+      None.
 
   Returns:
-    tf.keras.Model instance of the decoder.
+    A `tf.keras.Model` instance of the decoder.
   """
   decoder_type = model_config.decoder.type
   decoder_cfg = model_config.decoder.get()
@@ -92,6 +94,7 @@ def build_decoder(input_specs,
         dilation_rates=decoder_cfg.dilation_rates,
         kernel_size=decoder_cfg.kernel_size,
         num_filters=decoder_cfg.num_filters,
+        pool_kernel_size=decoder_cfg.pool_kernel_size,
         dropout_rate=decoder_cfg.dropout_rate,
         use_sync_bn=norm_activation_config.use_sync_bn,
         norm_momentum=norm_activation_config.norm_momentum,

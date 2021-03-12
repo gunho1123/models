@@ -21,6 +21,10 @@ import gin
 import orbit
 import tensorflow as tf
 
+<<<<<<< HEAD
+=======
+from official.core import train_utils
+>>>>>>> upstream/master
 from official.modeling.multitask import base_model
 from official.modeling.multitask import multitask
 
@@ -29,16 +33,30 @@ from official.modeling.multitask import multitask
 class MultiTaskEvaluator(orbit.AbstractEvaluator):
   """Implements the common trainer shared for TensorFlow models."""
 
+<<<<<<< HEAD
   def __init__(self,
                task: multitask.MultiTask,
                model: Union[tf.keras.Model, base_model.MultiTaskBaseModel],
                global_step: Optional[tf.Variable] = None):
+=======
+  def __init__(
+      self,
+      task: multitask.MultiTask,
+      model: Union[tf.keras.Model, base_model.MultiTaskBaseModel],
+      global_step: Optional[tf.Variable] = None,
+      checkpoint_exporter: Optional[train_utils.BestCheckpointExporter] = None):
+>>>>>>> upstream/master
     """Initialize common trainer for TensorFlow models.
 
     Args:
       task: A multitask.MultiTask instance.
       model: tf.keras.Model instance.
       global_step: the global step variable.
+<<<<<<< HEAD
+=======
+      checkpoint_exporter: an object that has the `maybe_export_checkpoint`
+        interface.
+>>>>>>> upstream/master
     """
     # Gets the current distribution strategy. If not inside any strategy scope,
     # it gets a single-replica no-op strategy.
@@ -46,6 +64,7 @@ class MultiTaskEvaluator(orbit.AbstractEvaluator):
     self._task = task
     self._model = model
     self._global_step = global_step or orbit.utils.create_global_step()
+<<<<<<< HEAD
     # TODO(hongkuny): Define a more robust way to handle the training/eval
     # checkpoint loading.
     if hasattr(self.model, "checkpoint_items"):
@@ -59,6 +78,12 @@ class MultiTaskEvaluator(orbit.AbstractEvaluator):
     self._checkpoint = tf.train.Checkpoint(
         global_step=self.global_step,
         **checkpoint_items)
+=======
+    self._checkpoint_exporter = checkpoint_exporter
+    self._checkpoint = tf.train.Checkpoint(
+        global_step=self.global_step,
+        model=self.model)
+>>>>>>> upstream/master
 
     self._validation_losses = None
     self._validation_metrics = None
@@ -165,7 +190,18 @@ class MultiTaskEvaluator(orbit.AbstractEvaluator):
       for metric in task_metrics + [task_loss]:
         logs[metric.name] = metric.result()
       if outputs:
+<<<<<<< HEAD
         metrics = task.reduce_aggregated_logs(outputs)
         logs.update(metrics)
       results[name] = logs
+=======
+        metrics = task.reduce_aggregated_logs(
+            outputs, global_step=self.global_step)
+        logs.update(metrics)
+      results[name] = logs
+
+    if self._checkpoint_exporter:
+      self._checkpoint_exporter.maybe_export_checkpoint(
+          self.checkpoint, results, self.global_step.numpy())
+>>>>>>> upstream/master
     return results

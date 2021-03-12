@@ -17,10 +17,10 @@
 from absl import logging
 import tensorflow as tf
 from official.core import base_task
-from official.core import input_reader
 from official.core import task_factory
 from official.modeling import tf_utils
 from official.vision.beta.configs import video_classification as exp_cfg
+from official.vision.beta.dataloaders import input_reader_factory
 from official.vision.beta.dataloaders import video_input
 from official.vision.beta.modeling import factory_3d
 
@@ -74,7 +74,7 @@ class VideoClassificationTask(base_task.Task):
     parser = video_input.Parser(input_params=params)
     postprocess_fn = video_input.PostBatchProcessor(params)
 
-    reader = input_reader.InputReader(
+    reader = input_reader_factory.input_reader_generator(
         params,
         dataset_fn=self._get_dataset_fn(params),
         decoder_fn=self._get_decoder_fn(params),
@@ -195,10 +195,7 @@ class VideoClassificationTask(base_task.Task):
 
     num_replicas = tf.distribute.get_strategy().num_replicas_in_sync
     with tf.GradientTape() as tape:
-      if self.task_config.train_data.output_audio:
-        outputs = model(features, training=True)
-      else:
-        outputs = model(features['image'], training=True)
+      outputs = model(features, training=True)
       # Casting output layer as float32 is necessary when mixed_precision is
       # mixed_float16 or mixed_bfloat16 to ensure output is casted as float32.
       outputs = tf.nest.map_structure(
@@ -267,10 +264,7 @@ class VideoClassificationTask(base_task.Task):
 
   def inference_step(self, features, model):
     """Performs the forward step."""
-    if self.task_config.train_data.output_audio:
-      outputs = model(features, training=False)
-    else:
-      outputs = model(features['image'], training=False)
+    outputs = model(features, training=False)
     if self.task_config.train_data.is_multilabel:
       outputs = tf.math.sigmoid(outputs)
     else:

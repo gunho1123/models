@@ -1,4 +1,4 @@
-# Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """Test Transformer model."""
 
 from absl import logging
@@ -61,13 +61,14 @@ class Seq2SeqTransformerTest(tf.test.TestCase, parameterized.TestCase):
       combinations.combine(
           distribution=[
               strategy_combinations.default_strategy,
-              strategy_combinations.tpu_strategy,
+              strategy_combinations.cloud_tpu_strategy,
           ],
           mode="eager"))
   def test_create_model_with_ds(self, distribution):
     with distribution.scope():
-      padded_decode = isinstance(distribution,
-                                 tf.distribute.experimental.TPUStrategy)
+      padded_decode = isinstance(
+          distribution,
+          (tf.distribute.TPUStrategy, tf.distribute.experimental.TPUStrategy))
       decode_max_length = 10
       batch_size = 4
       model = self._build_model(padded_decode, decode_max_length)

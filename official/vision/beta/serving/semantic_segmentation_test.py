@@ -38,6 +38,7 @@ class SemanticSegmentationExportTest(tf.test.TestCase, parameterized.TestCase):
     return segmentation_module
 
   def _export_from_module(self, module, input_type, save_directory):
+<<<<<<< HEAD
     if input_type == 'image_tensor':
       input_signature = tf.TensorSpec(shape=[None, 112, 112, 3], dtype=tf.uint8)
       signatures = {
@@ -65,6 +66,11 @@ class SemanticSegmentationExportTest(tf.test.TestCase, parameterized.TestCase):
     tf.saved_model.save(module,
                         save_directory,
                         signatures=signatures)
+=======
+    signatures = module.get_inference_signatures(
+        {input_type: 'serving_default'})
+    tf.saved_model.save(module, save_directory, signatures=signatures)
+>>>>>>> upstream/master
 
   def _get_dummy_input(self, input_type):
     """Get dummy input for the given input type."""
@@ -95,17 +101,30 @@ class SemanticSegmentationExportTest(tf.test.TestCase, parameterized.TestCase):
   )
   def test_export(self, input_type='image_tensor'):
     tmp_dir = self.get_temp_dir()
+<<<<<<< HEAD
 
     module = self._get_segmentation_module()
     model = module.build_model()
+=======
+    module = self._get_segmentation_module()
+>>>>>>> upstream/master
 
     self._export_from_module(module, input_type, tmp_dir)
 
     self.assertTrue(os.path.exists(os.path.join(tmp_dir, 'saved_model.pb')))
+<<<<<<< HEAD
     self.assertTrue(os.path.exists(
         os.path.join(tmp_dir, 'variables', 'variables.index')))
     self.assertTrue(os.path.exists(
         os.path.join(tmp_dir, 'variables', 'variables.data-00000-of-00001')))
+=======
+    self.assertTrue(
+        os.path.exists(os.path.join(tmp_dir, 'variables', 'variables.index')))
+    self.assertTrue(
+        os.path.exists(
+            os.path.join(tmp_dir, 'variables',
+                         'variables.data-00000-of-00001')))
+>>>>>>> upstream/master
 
     imported = tf.saved_model.load(tmp_dir)
     segmentation_fn = imported.signatures['serving_default']
@@ -119,9 +138,18 @@ class SemanticSegmentationExportTest(tf.test.TestCase, parameterized.TestCase):
             fn_output_signature=tf.TensorSpec(
                 shape=[112, 112, 3], dtype=tf.float32)))
     expected_output = tf.image.resize(
+<<<<<<< HEAD
         model(processed_images, training=False), [112, 112], method='bilinear')
     out = segmentation_fn(tf.constant(images))
     self.assertAllClose(out['predicted_masks'].numpy(), expected_output.numpy())
 
+=======
+        module.model(processed_images, training=False), [112, 112],
+        method='bilinear')
+    out = segmentation_fn(tf.constant(images))
+    self.assertAllClose(out['predicted_masks'].numpy(), expected_output.numpy())
+
+
+>>>>>>> upstream/master
 if __name__ == '__main__':
   tf.test.main()

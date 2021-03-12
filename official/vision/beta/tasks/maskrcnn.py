@@ -17,10 +17,11 @@
 
 from absl import logging
 import tensorflow as tf
+from official.common import dataset_fn
 from official.core import base_task
-from official.core import input_reader
 from official.core import task_factory
 from official.vision.beta.configs import maskrcnn as exp_cfg
+from official.vision.beta.dataloaders import input_reader_factory
 from official.vision.beta.dataloaders import maskrcnn_input
 from official.vision.beta.dataloaders import tf_example_decoder
 from official.vision.beta.dataloaders import dataset_fn
@@ -100,7 +101,8 @@ class MaskRCNNTask(base_task.Task):
       status = ckpt.restore(ckpt_dir_or_file)
       status.expect_partial().assert_existing_objects_matched()
     else:
-      assert "Only 'all' or 'backbone' can be used to initialize the model."
+      raise ValueError(
+          "Only 'all' or 'backbone' can be used to initialize the model.")
 
     logging.info('Finished loading pretrained checkpoint from %s',
                  ckpt_dir_or_file)
@@ -142,7 +144,7 @@ class MaskRCNNTask(base_task.Task):
         include_mask=self._task_config.model.include_mask,
         mask_crop_size=params.parser.mask_crop_size)
 
-    reader = input_reader.InputReader(
+    reader = input_reader_factory.input_reader_generator(
         params,
         dataset_fn=dataset_fn.pick_dataset_fn(params.file_type),
         decoder_fn=decoder.decode,
@@ -340,5 +342,5 @@ class MaskRCNNTask(base_task.Task):
         step_outputs[self.coco_metric.name][1])
     return state
 
-  def reduce_aggregated_logs(self, aggregated_logs):
+  def reduce_aggregated_logs(self, aggregated_logs, global_step=None):
     return self.coco_metric.result()

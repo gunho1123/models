@@ -32,6 +32,10 @@ from official.core import base_task
 from official.core import base_trainer as trainer_lib
 from official.core import config_definitions
 from official.modeling.progressive import policies
+<<<<<<< HEAD
+=======
+from official.modeling.progressive import utils
+>>>>>>> upstream/master
 
 ExperimentConfig = config_definitions.ExperimentConfig
 
@@ -61,6 +65,7 @@ class ProgressiveTrainerConfig(config_definitions.TrainerConfig):
   export_only_final_stage_ckpt: bool = True
 
 
+<<<<<<< HEAD
 class CheckpointWithHooks(tf.train.Checkpoint):
   """Same as tf.train.Checkpoint but supports hooks.
 
@@ -81,6 +86,8 @@ class CheckpointWithHooks(tf.train.Checkpoint):
     super(CheckpointWithHooks, self).read(save_path=save_path, options=options)
 
 
+=======
+>>>>>>> upstream/master
 @gin.configurable
 class ProgressiveTrainer(trainer_lib.Trainer):
   """Implements the progressive trainer shared for TensorFlow models."""
@@ -124,7 +131,11 @@ class ProgressiveTrainer(trainer_lib.Trainer):
 
     self._global_step = orbit.utils.create_global_step()
 
+<<<<<<< HEAD
     self._checkpoint = CheckpointWithHooks(
+=======
+    self._checkpoint = utils.CheckpointWithHooks(
+>>>>>>> upstream/master
         before_load_hook=self._update_pt_stage_from_ckpt,
         global_step=self.global_step,
         **self._task.cur_checkpoint_items)
@@ -267,7 +278,12 @@ class ProgressiveTrainer(trainer_lib.Trainer):
       step_interval = self.config.trainer.checkpoint_interval
     else:
       step_interval = self.config.trainer.export_checkpoint_interval
+<<<<<<< HEAD
     if global_step_np % step_interval != 0:
+=======
+    if global_step_np % step_interval != 0 and (
+        global_step_np < self._config.trainer.train_steps):
+>>>>>>> upstream/master
       logging.info('Not exporting checkpoints in global step: %d.',
                    global_step_np)
       return

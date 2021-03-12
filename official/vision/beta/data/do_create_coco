@@ -1,0 +1,8 @@
+python3 create_coco_tf_record.py --logtostderr \
+      --include_masks=True \
+      --image_dir="/home/gunho1123/coco/raw-data/train2017" \
+      --object_annotations_file="/home/gunho1123/coco/raw-data/annotations/instances_train2017.json" \
+      --caption_annotations_file="/home/gunho1123/coco/raw-data/annotations/captions_train2017.json" \
+      --output_file_prefix="/home/gunho1123/coco/tfrecord" \
+      --num_shards=100
+

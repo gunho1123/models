@@ -1,4 +1,4 @@
-# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,13 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
-"""Utilities used for data preparation."""
 
-from __future__ import absolute_import
-from __future__ import division
-# from __future__ import google_type_annotations
-from __future__ import print_function
+"""Utilities used for data preparation."""
 
 import collections
 import json
@@ -180,7 +175,7 @@ def get_classification_input_data(batch_size, seq_len, strategy, is_training,
   # When using TPU pods, we need to clone dataset across
   # workers and need to pass in function that returns the dataset rather
   # than passing dataset instance itself.
-  use_dataset_fn = isinstance(strategy, tf.distribute.experimental.TPUStrategy)
+  use_dataset_fn = isinstance(strategy, tf.distribute.TPUStrategy)
   if use_dataset_fn:
     if batch_size % strategy.num_replicas_in_sync != 0:
       raise ValueError(
@@ -213,7 +208,7 @@ def get_squad_input_data(batch_size, seq_len, q_len, strategy, is_training,
   # When using TPU pods, we need to clone dataset across
   # workers and need to pass in function that returns the dataset rather
   # than passing dataset instance itself.
-  use_dataset_fn = isinstance(strategy, tf.distribute.experimental.TPUStrategy)
+  use_dataset_fn = isinstance(strategy, tf.distribute.TPUStrategy)
   if use_dataset_fn:
     if batch_size % strategy.num_replicas_in_sync != 0:
       raise ValueError(
@@ -597,7 +592,7 @@ def get_pretrain_input_data(batch_size,
   # When using TPU pods, we need to clone dataset across
   # workers and need to pass in function that returns the dataset rather
   # than passing dataset instance itself.
-  use_dataset_fn = isinstance(strategy, tf.distribute.experimental.TPUStrategy)
+  use_dataset_fn = isinstance(strategy, tf.distribute.TPUStrategy)
   split = "train"
   bsz_per_host = int(batch_size / num_hosts)
   record_glob_base = format_filename(

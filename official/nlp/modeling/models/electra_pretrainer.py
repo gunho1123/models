@@ -1,4 +1,4 @@
-# Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """Trainer network for ELECTRA models."""
 # pylint: disable=g-classes-have-attributes
 
@@ -37,9 +37,9 @@ class ElectraPretrainer(tf.keras.Model):
   that are used to create the training objectives.
 
   *Note* that the model is constructed by Keras Subclass API, where layers are
-  defined inside __init__ and call() implements the computation.
+  defined inside `__init__` and `call()` implements the computation.
 
-  Arguments:
+  Args:
     generator_network: A transformer network for generator, this network should
       output a sequence output and an optional classification output.
     discriminator_network: A transformer network for discriminator, this network

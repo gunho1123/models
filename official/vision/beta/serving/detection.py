@@ -31,32 +31,30 @@ STDDEV_RGB = (0.229 * 255, 0.224 * 255, 0.225 * 255)
 class DetectionModule(export_base.ExportModule):
   """Detection Module."""
 
-  def build_model(self):
+  def _build_model(self):
 
     if self._batch_size is None:
       ValueError("batch_size can't be None for detection models")
-    if not self._params.task.model.detection_generator.use_batched_nms:
+    if not self.params.task.model.detection_generator.use_batched_nms:
       ValueError('Only batched_nms is supported.')
     input_specs = tf.keras.layers.InputSpec(shape=[self._batch_size] +
                                             self._input_image_size + [3])
 
-    if isinstance(self._params.task.model, configs.maskrcnn.MaskRCNN):
-      self._model = factory.build_maskrcnn(
-          input_specs=input_specs,
-          model_config=self._params.task.model)
-    elif isinstance(self._params.task.model, configs.retinanet.RetinaNet):
-      self._model = factory.build_retinanet(
-          input_specs=input_specs,
-          model_config=self._params.task.model)
+    if isinstance(self.params.task.model, configs.maskrcnn.MaskRCNN):
+      model = factory.build_maskrcnn(
+          input_specs=input_specs, model_config=self.params.task.model)
+    elif isinstance(self.params.task.model, configs.retinanet.RetinaNet):
+      model = factory.build_retinanet(
+          input_specs=input_specs, model_config=self.params.task.model)
     else:
       raise ValueError('Detection module not implemented for {} model.'.format(
-          type(self._params.task.model)))
+          type(self.params.task.model)))
 
-    return self._model
+    return model
 
   def _build_inputs(self, image):
-    """Builds classification model inputs for serving."""
-    model_params = self._params.task.model
+    """Builds detection model inputs for serving."""
+    model_params = self.params.task.model
     # Normalizes image with mean and std pixel values.
     image = preprocess_ops.normalize_image(image,
                                            offset=MEAN_RGB,
@@ -70,8 +68,6 @@ class DetectionModule(export_base.ExportModule):
         aug_scale_min=1.0,
         aug_scale_max=1.0)
 
-    image_shape = image_info[1, :]  # Shape of original image.
-
     input_anchor = anchor.build_anchor_generator(
         min_level=model_params.min_level,
         max_level=model_params.max_level,
@@ -81,17 +77,17 @@ class DetectionModule(export_base.ExportModule):
     anchor_boxes = input_anchor(image_size=(self._input_image_size[0],
                                             self._input_image_size[1]))
 
-    return image, anchor_boxes, image_shape
+    return image, anchor_boxes, image_info
 
-  def _run_inference_on_image_tensors(self, images: tf.Tensor):
+  def serve(self, images: tf.Tensor):
     """Cast image to float and run inference.
 
     Args:
       images: uint8 Tensor of shape [batch_size, None, None, 3]
     Returns:
-      Tensor holding classification output logits.
+      Tensor holding detection output logits.
     """
-    model_params = self._params.task.model
+    model_params = self.params.task.model
     with tf.device('cpu:0'):
       images = tf.cast(images, dtype=tf.float32)
 
@@ -111,20 +107,22 @@ class DetectionModule(export_base.ExportModule):
             dtype=tf.float32)
         anchor_shapes.append((str(level), anchor_level_spec))
 
-      image_shape_spec = tf.TensorSpec(shape=[2,], dtype=tf.float32)
+      image_info_spec = tf.TensorSpec(shape=[4, 2], dtype=tf.float32)
 
-      images, anchor_boxes, image_shape = tf.nest.map_structure(
+      images, anchor_boxes, image_info = tf.nest.map_structure(
           tf.identity,
           tf.map_fn(
               self._build_inputs,
               elems=images,
               fn_output_signature=(images_spec, dict(anchor_shapes),
-                                   image_shape_spec),
+                                   image_info_spec),
               parallel_iterations=32))
 
-    detections = self._model.call(
+    input_image_shape = image_info[:, 1, :]
+
+    detections = self.model.call(
         images=images,
-        image_shape=image_shape,
+        image_shape=input_image_shape,
         anchor_boxes=anchor_boxes,
         training=False)
 
@@ -132,7 +130,8 @@ class DetectionModule(export_base.ExportModule):
         'detection_boxes': detections['detection_boxes'],
         'detection_scores': detections['detection_scores'],
         'detection_classes': detections['detection_classes'],
-        'num_detections': detections['num_detections']
+        'num_detections': detections['num_detections'],
+        'image_info': image_info
     }
     if 'detection_masks' in detections.keys():
       final_outputs['detection_masks'] = detections['detection_masks']

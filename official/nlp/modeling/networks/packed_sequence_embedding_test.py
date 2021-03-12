@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 # Lint as: python3
 # Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+=======
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+>>>>>>> upstream/master
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +16,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+<<<<<<< HEAD
 # ==============================================================================
+=======
+
+>>>>>>> upstream/master
 """Tests for official.nlp.modeling.networks.packed_sequence_embedding."""
 
 # Import libraries
@@ -45,10 +53,18 @@ class PackedSequenceEmbeddingTest(tf.test.TestCase, parameterized.TestCase):
     vocab_size = 100
     max_position_embeddings = 32
     type_vocab_size = 2
+<<<<<<< HEAD
+=======
+    embedding_width = 16
+>>>>>>> upstream/master
     hidden_size = 32
     embedding_cfg = dict(
         vocab_size=vocab_size,
         type_vocab_size=2,
+<<<<<<< HEAD
+=======
+        embedding_width=embedding_width,
+>>>>>>> upstream/master
         hidden_size=hidden_size,
         max_seq_length=max_position_embeddings,
         initializer=tf.keras.initializers.TruncatedNormal(stddev=0.02),
@@ -103,6 +119,10 @@ class PackedSequenceEmbeddingTest(tf.test.TestCase, parameterized.TestCase):
     embedding_cfg = dict(
         vocab_size=100,
         type_vocab_size=2,
+<<<<<<< HEAD
+=======
+        embedding_width=64,
+>>>>>>> upstream/master
         hidden_size=64,
         max_seq_length=32,
         initializer=tf.keras.initializers.TruncatedNormal(stddev=0.02),

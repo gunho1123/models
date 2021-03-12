@@ -1,5 +1,4 @@
-# Lint as: python3
-# Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """Common configuration settings."""
 
 from typing import Optional, Sequence, Union
@@ -64,7 +63,6 @@ class DataConfig(base_config.Config):
       The default behavior is that the dataset creates anonymous, exclusively
       owned jobs.
     tfds_data_dir: A str specifying the directory to read/write TFDS data.
-    tfds_download: A bool to indicate whether to download data using TFDS.
     tfds_as_supervised: A bool. When loading dataset from TFDS, if True, the
       returned tf.data.Dataset will have a 2-tuple structure (input, label)
       according to builder.info.supervised_keys; if False, the default, the
@@ -90,7 +88,6 @@ class DataConfig(base_config.Config):
   tf_data_service_address: Optional[str] = None
   tf_data_service_job_name: Optional[str] = None
   tfds_data_dir: str = ""
-  tfds_download: bool = False
   tfds_as_supervised: bool = False
   tfds_skip_decoding_feature: str = ""
 

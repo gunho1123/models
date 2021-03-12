@@ -1,4 +1,4 @@
-# Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,14 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """Input pipelines."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import tensorflow.compat.v2 as tf
+import tensorflow as tf
 
 
 def decode_record(record, name_to_features):
@@ -222,7 +218,7 @@ def get_input_dataset(input_file_pattern,
   # When using TPU pods, we need to clone dataset across
   # workers and need to pass in function that returns the dataset rather
   # than passing dataset instance itself.
-  use_dataset_fn = isinstance(strategy, tf.distribute.experimental.TPUStrategy)
+  use_dataset_fn = isinstance(strategy, tf.distribute.TPUStrategy)
   if use_dataset_fn:
     if batch_size % strategy.num_replicas_in_sync != 0:
       raise ValueError(

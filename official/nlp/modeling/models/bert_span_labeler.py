@@ -1,4 +1,4 @@
-# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """BERT Question Answering model."""
 # pylint: disable=g-classes-have-attributes
 import collections
@@ -34,7 +34,7 @@ class BertSpanLabeler(tf.keras.Model):
   *Note* that the model is constructed by
   [Keras Functional API](https://keras.io/guides/functional_api/).
 
-  Arguments:
+  Args:
     network: A transformer network. This network should output a sequence output
       and a classification output. Furthermore, it should expose its embedding
       table via a "get_embedding_table" method.
@@ -62,6 +62,11 @@ class BertSpanLabeler(tf.keras.Model):
       sequence_output = outputs[0]
     else:
       sequence_output = outputs['sequence_output']
+
+    # The input network (typically a transformer model) may get outputs from all
+    # layers. When this case happens, we retrieve the last layer output.
+    if isinstance(sequence_output, list):
+      sequence_output = sequence_output[-1]
 
     # This is an instance variable for ease of access to the underlying task
     # network.

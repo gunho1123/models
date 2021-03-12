@@ -1,4 +1,4 @@
-# Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """Tests for official.nlp.projects.bigbird.attention."""
 
 import tensorflow as tf
@@ -29,7 +29,7 @@ class BigbirdAttentionTest(tf.test.TestCase):
     block_size = 64
     mask_layer = attention.BigBirdMasks(block_size=block_size)
     encoder_inputs_mask = tf.zeros((batch_size, seq_length), dtype=tf.int32)
-    masks = mask_layer(encoder_inputs_mask)
+    masks = mask_layer(tf.cast(encoder_inputs_mask, dtype=tf.float64))
     test_layer = attention.BigBirdAttention(
         num_heads=num_heads,
         key_dim=key_dim,

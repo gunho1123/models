@@ -46,7 +46,12 @@ def main(_):
   # dtype is float16
   if params.runtime.mixed_precision_dtype:
     performance.set_mixed_precision_policy(params.runtime.mixed_precision_dtype,
+<<<<<<< HEAD
                                            params.runtime.loss_scale)
+=======
+                                           params.runtime.loss_scale,
+                                           use_experimental_api=True)
+>>>>>>> upstream/master
   distribution_strategy = distribute_utils.get_distribution_strategy(
       distribution_strategy=params.runtime.distribution_strategy,
       all_reduce_alg=params.runtime.all_reduce_alg,
@@ -63,6 +68,11 @@ def main(_):
       params=params,
       model_dir=model_dir)
 
+<<<<<<< HEAD
+=======
+  train_utils.save_gin_config(FLAGS.mode, model_dir)
+
+>>>>>>> upstream/master
 if __name__ == '__main__':
   tfm_flags.define_flags()
   app.run(main)

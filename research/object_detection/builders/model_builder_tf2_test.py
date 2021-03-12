@@ -24,7 +24,8 @@ from google.protobuf import text_format
 from object_detection.builders import model_builder
 from object_detection.builders import model_builder_test
 from object_detection.core import losses
-from object_detection.models import center_net_resnet_feature_extractor
+from object_detection.models import center_net_hourglass_feature_extractor
+from object_detection.models.keras_models import hourglass_network
 from object_detection.protos import center_net_pb2
 from object_detection.protos import model_pb2
 from object_detection.utils import tf_version
@@ -116,6 +117,9 @@ class ModelBuilderTF2Test(model_builder_test.ModelBuilderTest):
       candidate_ranking_mode: "score_distance_ratio"
       offset_peak_radius: 3
       per_keypoint_offset: true
+      predict_depth: true
+      per_keypoint_depth: true
+      keypoint_depth_loss_weight: 0.3
     """
     config = text_format.Merge(task_proto_txt,
                                center_net_pb2.CenterNet.KeypointEstimation())
@@ -192,7 +196,7 @@ class ModelBuilderTF2Test(model_builder_test.ModelBuilderTest):
       center_net {
         num_classes: 10
         feature_extractor {
-          type: "resnet_v2_101"
+          type: "hourglass_52"
           channel_stds: [4, 5, 6]
           bgr_ordering: true
         }
@@ -264,6 +268,9 @@ class ModelBuilderTF2Test(model_builder_test.ModelBuilderTest):
     self.assertEqual(kp_params.candidate_ranking_mode, 'score_distance_ratio')
     self.assertEqual(kp_params.offset_peak_radius, 3)
     self.assertEqual(kp_params.per_keypoint_offset, True)
+    self.assertEqual(kp_params.predict_depth, True)
+    self.assertEqual(kp_params.per_keypoint_depth, True)
+    self.assertAlmostEqual(kp_params.keypoint_depth_loss_weight, 0.3)
 
     # Check mask related parameters.
     self.assertAlmostEqual(model._mask_params.task_loss_weight, 0.7)
@@ -292,11 +299,14 @@ class ModelBuilderTF2Test(model_builder_test.ModelBuilderTest):
 
     # Check feature extractor parameters.
     self.assertIsInstance(
-        model._feature_extractor,
-        center_net_resnet_feature_extractor.CenterNetResnetFeatureExtractor)
+        model._feature_extractor, center_net_hourglass_feature_extractor
+        .CenterNetHourglassFeatureExtractor)
     self.assertAllClose(model._feature_extractor._channel_means, [0, 0, 0])
     self.assertAllClose(model._feature_extractor._channel_stds, [4, 5, 6])
     self.assertTrue(model._feature_extractor._bgr_ordering)
+    backbone = model._feature_extractor._network
+    self.assertIsInstance(backbone, hourglass_network.HourglassNetwork)
+    self.assertTrue(backbone.num_hourglasses, 1)
 
 
 if __name__ == '__main__':

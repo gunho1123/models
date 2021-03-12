@@ -29,16 +29,20 @@ IMAGE_KEY = 'image/encoded'
 LABEL_KEY = 'clip/label/index'
 
 
-def _process_image(image: tf.Tensor,
-                   is_training: bool = True,
-                   num_frames: int = 32,
-                   stride: int = 1,
-                   num_test_clips: int = 1,
-                   min_resize: int = 256,
-                   crop_size: int = 224,
-                   num_crops: int = 1,
-                   zero_centering_image: bool = False,
-                   seed: Optional[int] = None) -> tf.Tensor:
+def process_image(image: tf.Tensor,
+                  is_training: bool = True,
+                  num_frames: int = 32,
+                  stride: int = 1,
+                  num_test_clips: int = 1,
+                  min_resize: int = 256,
+                  crop_size: int = 224,
+                  num_crops: int = 1,
+                  zero_centering_image: bool = False,
+                  min_aspect_ratio: float = 0.5,
+                  max_aspect_ratio: float = 2,
+                  min_area_ratio: float = 0.49,
+                  max_area_ratio: float = 1.0,
+                  seed: Optional[int] = None) -> tf.Tensor:
   """Processes a serialized image tensor.
 
   Args:
@@ -58,6 +62,10 @@ def _process_image(image: tf.Tensor,
     num_crops: Number of crops to perform on the resized frames.
     zero_centering_image: If True, frames are normalized to values in [-1, 1].
       If False, values in [0, 1].
+    min_aspect_ratio: The minimum aspect range for cropping.
+    max_aspect_ratio: The maximum aspect range for cropping.
+    min_area_ratio: The minimum area range for cropping.
+    max_area_ratio: The maximum area range for cropping.
     seed: A deterministic seed to use when sampling.
 
   Returns:
@@ -86,15 +94,16 @@ def _process_image(image: tf.Tensor,
   # Decode JPEG string to tf.uint8.
   image = preprocess_ops_3d.decode_jpeg(image, 3)
 
-  # Resize images (resize happens only if necessary to save compute).
-  image = preprocess_ops_3d.resize_smallest(image, min_resize)
-
   if is_training:
-    # Standard image data augmentation: random crop and random flip.
-    image = preprocess_ops_3d.crop_image(image, crop_size, crop_size, True,
-                                         seed)
+    # Standard image data augmentation: random resized crop and random flip.
+    image = preprocess_ops_3d.random_crop_resize(
+        image, crop_size, crop_size, num_frames, 3,
+        (min_aspect_ratio, max_aspect_ratio),
+        (min_area_ratio, max_area_ratio))
     image = preprocess_ops_3d.random_flip_left_right(image, seed)
   else:
+    # Resize images (resize happens only if necessary to save compute).
+    image = preprocess_ops_3d.resize_smallest(image, min_resize)
     # Crop of the frames.
     image = preprocess_ops_3d.crop_image(image, crop_size, crop_size, False,
                                          num_crops)
@@ -103,11 +112,11 @@ def _process_image(image: tf.Tensor,
   return preprocess_ops_3d.normalize_image(image, zero_centering_image)
 
 
-def _postprocess_image(image: tf.Tensor,
-                       is_training: bool = True,
-                       num_frames: int = 32,
-                       num_test_clips: int = 1,
-                       num_test_crops: int = 1) -> tf.Tensor:
+def postprocess_image(image: tf.Tensor,
+                      is_training: bool = True,
+                      num_frames: int = 32,
+                      num_test_clips: int = 1,
+                      num_test_crops: int = 1) -> tf.Tensor:
   """Processes a batched Tensor of frames.
 
   The same parameters used in process should be used here.
@@ -138,9 +147,9 @@ def _postprocess_image(image: tf.Tensor,
   return image
 
 
-def _process_label(label: tf.Tensor,
-                   one_hot_label: bool = True,
-                   num_classes: Optional[int] = None) -> tf.Tensor:
+def process_label(label: tf.Tensor,
+                  one_hot_label: bool = True,
+                  num_classes: Optional[int] = None) -> tf.Tensor:
   """Processes label Tensor."""
   # Validate parameters.
   if one_hot_label and not num_classes:
@@ -166,15 +175,13 @@ class Decoder(decoder.Decoder):
   """A tf.Example decoder for classification task."""
 
   def __init__(self, image_key: str = IMAGE_KEY, label_key: str = LABEL_KEY):
-    self._image_key = image_key
-    self._label_key = label_key
     self._context_description = {
         # One integer stored in context.
-        self._label_key: tf.io.VarLenFeature(tf.int64),
+        label_key: tf.io.VarLenFeature(tf.int64),
     }
     self._sequence_description = {
         # Each image is a string encoding JPEG.
-        self._image_key: tf.io.FixedLenSequenceFeature((), tf.string),
+        image_key: tf.io.FixedLenSequenceFeature((), tf.string),
     }
 
   def add_feature(self, feature_name: str,
@@ -222,6 +229,10 @@ class Parser(parser.Parser):
     self._label_key = label_key
     self._dtype = tf.dtypes.as_dtype(input_params.dtype)
     self._output_audio = input_params.output_audio
+    self._min_aspect_ratio = input_params.aug_min_aspect_ratio
+    self._max_aspect_ratio = input_params.aug_max_aspect_ratio
+    self._min_area_ratio = input_params.aug_min_area_ratio
+    self._max_area_ratio = input_params.aug_max_area_ratio
     if self._output_audio:
       self._audio_feature = input_params.audio_feature
       self._audio_shape = input_params.audio_feature_shape
@@ -232,19 +243,23 @@ class Parser(parser.Parser):
     """Parses data for training."""
     # Process image and label.
     image = decoded_tensors[self._image_key]
-    image = _process_image(
+    image = process_image(
         image=image,
         is_training=True,
         num_frames=self._num_frames,
         stride=self._stride,
         num_test_clips=self._num_test_clips,
         min_resize=self._min_resize,
-        crop_size=self._crop_size)
+        crop_size=self._crop_size,
+        min_aspect_ratio=self._min_aspect_ratio,
+        max_aspect_ratio=self._max_aspect_ratio,
+        min_area_ratio=self._min_area_ratio,
+        max_area_ratio=self._max_area_ratio)
     image = tf.cast(image, dtype=self._dtype)
     features = {'image': image}
 
     label = decoded_tensors[self._label_key]
-    label = _process_label(label, self._one_hot_label, self._num_classes)
+    label = process_label(label, self._one_hot_label, self._num_classes)
 
     if self._output_audio:
       audio = decoded_tensors[self._audio_feature]
@@ -262,7 +277,7 @@ class Parser(parser.Parser):
   ) -> Tuple[Dict[str, tf.Tensor], tf.Tensor]:
     """Parses data for evaluation."""
     image = decoded_tensors[self._image_key]
-    image = _process_image(
+    image = process_image(
         image=image,
         is_training=False,
         num_frames=self._num_frames,
@@ -275,14 +290,14 @@ class Parser(parser.Parser):
     features = {'image': image}
 
     label = decoded_tensors[self._label_key]
-    label = _process_label(label, self._one_hot_label, self._num_classes)
+    label = process_label(label, self._one_hot_label, self._num_classes)
 
     if self._output_audio:
       audio = decoded_tensors[self._audio_feature]
       audio = tf.cast(audio, dtype=self._dtype)
       audio = preprocess_ops_3d.sample_sequence(
           audio, 20, random=False, stride=1)
-      audio = tf.ensure_shape(audio, [20, 2048])
+      audio = tf.ensure_shape(audio, self._audio_shape)
       features['audio'] = audio
 
     return features, label
@@ -301,9 +316,9 @@ class PostBatchProcessor(object):
   def __call__(self, features: Dict[str, tf.Tensor],
                label: tf.Tensor) -> Tuple[Dict[str, tf.Tensor], tf.Tensor]:
     """Parses a single tf.Example into image and label tensors."""
-    for key in ['image', 'audio']:
+    for key in ['image']:
       if key in features:
-        features[key] = _postprocess_image(
+        features[key] = postprocess_image(
             image=features[key],
             is_training=self._is_training,
             num_frames=self._num_frames,

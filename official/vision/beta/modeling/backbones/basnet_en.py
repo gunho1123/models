@@ -94,7 +94,7 @@ class BASNet_En(tf.keras.Model):
 
     x = layers.Conv2D(
         # (gunho) Change filters for BASNet
-        filters=64, kernel_size=3, strides=1, use_bias=False, padding='same',
+        filters=64, kernel_size=3, strides=1, use_bias=True, padding='same',
         kernel_initializer=self._kernel_initializer,
         kernel_regularizer=self._kernel_regularizer,
         bias_regularizer=self._bias_regularizer)(

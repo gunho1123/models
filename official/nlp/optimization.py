@@ -1,4 +1,4 @@
-# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,11 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """Functions and classes related to optimization (weight updates)."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import re
 
@@ -194,27 +191,15 @@ class AdamWeightDecay(tf.keras.optimizers.Adam):
     return coefficients['lr_t'], dict(apply_state=apply_state)
 
   def _resource_apply_dense(self, grad, var, apply_state=None):
-    # As the weight decay doesn't take any tensors from forward pass as inputs,
-    # add a control dependency here to make sure it happens strictly in the
-    # backward pass.
-    # TODO(b/171088214): Remove it after the control dependency in
-    # nested function is fixed.
-    with tf.control_dependencies([tf.identity(grad)]):
-      lr_t, kwargs = self._get_lr(var.device, var.dtype.base_dtype, apply_state)
-      decay = self._decay_weights_op(var, lr_t, apply_state)
+    lr_t, kwargs = self._get_lr(var.device, var.dtype.base_dtype, apply_state)
+    decay = self._decay_weights_op(var, lr_t, apply_state)
     with tf.control_dependencies([decay]):
       return super(AdamWeightDecay,
                    self)._resource_apply_dense(grad, var, **kwargs)
 
   def _resource_apply_sparse(self, grad, var, indices, apply_state=None):
-    # As the weight decay doesn't take any tensors from forward pass as inputs,
-    # add a control dependency here to make sure it happens strictly in the
-    # backward pass.
-    # TODO(b/171088214): Remove it after the control dependency in
-    # nested function is fixed.
-    with tf.control_dependencies([tf.identity(grad)]):
-      lr_t, kwargs = self._get_lr(var.device, var.dtype.base_dtype, apply_state)
-      decay = self._decay_weights_op(var, lr_t, apply_state)
+    lr_t, kwargs = self._get_lr(var.device, var.dtype.base_dtype, apply_state)
+    decay = self._decay_weights_op(var, lr_t, apply_state)
     with tf.control_dependencies([decay]):
       return super(AdamWeightDecay,
                    self)._resource_apply_sparse(grad, var, indices, **kwargs)

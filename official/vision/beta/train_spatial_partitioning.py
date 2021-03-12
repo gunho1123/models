@@ -97,7 +97,12 @@ def main(_):
   # dtype is float16
   if params.runtime.mixed_precision_dtype:
     performance.set_mixed_precision_policy(params.runtime.mixed_precision_dtype,
+<<<<<<< HEAD
                                            params.runtime.loss_scale)
+=======
+                                           params.runtime.loss_scale,
+                                           use_experimental_api=True)
+>>>>>>> upstream/master
 
   input_partition_dims = None
   if FLAGS.mode == 'train_and_eval':

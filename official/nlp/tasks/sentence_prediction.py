@@ -1,5 +1,4 @@
-# Lint as: python3
-# Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """Sentence prediction (classification) task."""
-from typing import List, Union
+from typing import List, Union, Optional
 
 from absl import logging
 import dataclasses
@@ -81,13 +80,19 @@ class SentencePredictionTask(base_task.Task):
     else:
       encoder_network = encoders.build_encoder(self.task_config.model.encoder)
     encoder_cfg = self.task_config.model.encoder.get()
-    # Currently, we only support bert-style sentence prediction finetuning.
-    return models.BertClassifier(
-        network=encoder_network,
-        num_classes=self.task_config.model.num_classes,
-        initializer=tf.keras.initializers.TruncatedNormal(
-            stddev=encoder_cfg.initializer_range),
-        use_encoder_pooler=self.task_config.model.use_encoder_pooler)
+    if self.task_config.model.encoder.type == 'xlnet':
+      return models.XLNetClassifier(
+          network=encoder_network,
+          num_classes=self.task_config.model.num_classes,
+          initializer=tf.keras.initializers.RandomNormal(
+              stddev=encoder_cfg.initializer_range))
+    else:
+      return models.BertClassifier(
+          network=encoder_network,
+          num_classes=self.task_config.model.num_classes,
+          initializer=tf.keras.initializers.TruncatedNormal(
+              stddev=encoder_cfg.initializer_range),
+          use_encoder_pooler=self.task_config.model.use_encoder_pooler)
 
   def build_losses(self, labels, model_outputs, aux_losses=None) -> tf.Tensor:
     if self.task_config.model.num_classes == 1:
@@ -153,8 +158,7 @@ class SentencePredictionTask(base_task.Task):
     logs = {self.loss: loss}
     if self.metric_type == 'matthews_corrcoef':
       logs.update({
-          'sentence_prediction':
-              # Ensure one prediction along batch dimension.
+          'sentence_prediction':  # Ensure one prediction along batch dimension.
               tf.expand_dims(tf.math.argmax(outputs, axis=1), axis=1),
           'labels':
               labels,
@@ -178,7 +182,7 @@ class SentencePredictionTask(base_task.Task):
         np.concatenate([v.numpy() for v in step_outputs['labels']], axis=0))
     return state
 
-  def reduce_aggregated_logs(self, aggregated_logs):
+  def reduce_aggregated_logs(self, aggregated_logs, global_step=None):
     if self.metric_type == 'accuracy':
       return None
     elif self.metric_type == 'matthews_corrcoef':
@@ -222,32 +226,34 @@ class SentencePredictionTask(base_task.Task):
                  ckpt_dir_or_file)
 
 
-def predict(task: SentencePredictionTask, params: cfg.DataConfig,
-            model: tf.keras.Model) -> List[Union[int, float]]:
+def predict(task: SentencePredictionTask,
+            params: cfg.DataConfig,
+            model: tf.keras.Model,
+            params_aug: Optional[cfg.DataConfig] = None,
+            test_time_aug_wgt: float = 0.3) -> List[Union[int, float]]:
   """Predicts on the input data.
 
   Args:
     task: A `SentencePredictionTask` object.
     params: A `cfg.DataConfig` object.
     model: A keras.Model.
+    params_aug: A `cfg.DataConfig` object for augmented data.
+    test_time_aug_wgt: Test time augmentation weight. The prediction score will
+      use (1. - test_time_aug_wgt) original prediction plus test_time_aug_wgt
+      augmented prediction.
 
   Returns:
     A list of predictions with length of `num_examples`. For regression task,
       each element in the list is the predicted score; for classification task,
       each element is the predicted class id.
   """
-  is_regression = task.task_config.model.num_classes == 1
 
   def predict_step(inputs):
     """Replicated prediction calculation."""
     x, _ = inputs
     example_id = x.pop('example_id')
     outputs = task.inference_step(x, model)
-    if is_regression:
-      return dict(example_id=example_id, predictions=outputs)
-    else:
-      return dict(
-          example_id=example_id, predictions=tf.argmax(outputs, axis=-1))
+    return dict(example_id=example_id, predictions=outputs)
 
   def aggregate_fn(state, outputs):
     """Concatenates model's outputs."""
@@ -266,4 +272,22 @@ def predict(task: SentencePredictionTask, params: cfg.DataConfig,
   # When running on TPU POD, the order of output cannot be maintained,
   # so we need to sort by example_id.
   outputs = sorted(outputs, key=lambda x: x[0])
-  return [x[1] for x in outputs]
+  is_regression = task.task_config.model.num_classes == 1
+  if params_aug is not None:
+    dataset_aug = orbit.utils.make_distributed_dataset(
+        tf.distribute.get_strategy(), task.build_inputs, params_aug)
+    outputs_aug = utils.predict(predict_step, aggregate_fn, dataset_aug)
+    outputs_aug = sorted(outputs_aug, key=lambda x: x[0])
+    if is_regression:
+      return [(1. - test_time_aug_wgt) * x[1] + test_time_aug_wgt * y[1]
+              for x, y in zip(outputs, outputs_aug)]
+    else:
+      return [
+          tf.argmax(
+              (1. - test_time_aug_wgt) * x[1] + test_time_aug_wgt * y[1],
+              axis=-1) for x, y in zip(outputs, outputs_aug)
+      ]
+  if is_regression:
+    return [x[1] for x in outputs]
+  else:
+    return [tf.argmax(x[1], axis=-1) for x in outputs]

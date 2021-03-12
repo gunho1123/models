@@ -1,4 +1,4 @@
-# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,16 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """A converter from a V1 BERT encoder checkpoint to a V2 encoder checkpoint.
 
 The conversion will yield an object-oriented checkpoint that can be used
 to restore a BertEncoder or BertPretrainerV2 object (see the `converted_model`
 FLAG below).
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import os
 
@@ -96,6 +93,8 @@ def _create_bert_pretrainer_model(cfg):
       mlm_activation=tf_utils.get_activation(cfg.hidden_act),
       mlm_initializer=tf.keras.initializers.TruncatedNormal(
           stddev=cfg.initializer_range))
+  # Makes sure the pretrainer variables are created.
+  _ = pretrainer(pretrainer.inputs)
   return pretrainer
 
 

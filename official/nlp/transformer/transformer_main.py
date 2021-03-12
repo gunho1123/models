@@ -1,4 +1,4 @@
-# Copyright 2018 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,15 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
+
 """Train and evaluate the Transformer model.
 
 See README for description of setting the training schedule and evaluating the
 BLEU score.
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import os
 import tempfile
@@ -41,6 +38,7 @@ from official.nlp.transformer import translate
 from official.nlp.transformer.utils import tokenizer
 from official.utils.flags import core as flags_core
 from official.utils.misc import keras_utils
+# pylint:disable=logging-format-interpolation
 
 INF = int(1e9)
 BLEU_DIR = "bleu"
@@ -178,15 +176,13 @@ class TransformerTask(object):
     else:
       logging.info("Not using any distribution strategy.")
 
-    performance.set_mixed_precision_policy(
-        params["dtype"],
-        flags_core.get_loss_scale(flags_obj, default_for_fp16="dynamic"))
+    performance.set_mixed_precision_policy(params["dtype"],
+                                           use_experimental_api=False)
 
   @property
   def use_tpu(self):
     if self.distribution_strategy:
-      return isinstance(self.distribution_strategy,
-                        tf.distribute.experimental.TPUStrategy)
+      return isinstance(self.distribution_strategy, tf.distribute.TPUStrategy)
     return False
 
   def train(self):
@@ -447,7 +443,8 @@ class TransformerTask(object):
         use_float16=params["dtype"] == tf.float16,
         use_graph_rewrite=self.flags_obj.fp16_implementation == "graph_rewrite",
         loss_scale=flags_core.get_loss_scale(
-            self.flags_obj, default_for_fp16="dynamic"))
+            self.flags_obj, default_for_fp16="dynamic"),
+        use_experimental_api=False)
 
     return opt
 

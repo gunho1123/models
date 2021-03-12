@@ -23,7 +23,6 @@ from official.core import input_reader
 from official.core import task_factory
 from official.vision.beta.configs import basnet as exp_cfg
 from official.vision.beta.dataloaders import basnet_input # Prepare input datas
-#from official.vision.beta.evaluation import basnet_metrics
 from official.vision.beta.evaluation import basnet_evaluator
 from official.vision.beta.losses import basnet_losses
 from official.vision.beta.modeling import factory
@@ -229,5 +228,5 @@ class BASNetTask(base_task.Task):
     
     return state
 
-  def reduce_aggregated_logs(self, aggregated_logs):
+  def reduce_aggregated_logs(self, aggregated_logs, global_step=None):
     return self.basnet_metric.result()

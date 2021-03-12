@@ -122,7 +122,7 @@ class SpatialPyramidPooling(tf.keras.layers.Layer):
                 epsilon=self.batchnorm_epsilon),
           tf.keras.layers.Activation(self.activation)])
       self.aspp_layers.append(conv_sequential)
-
+    
     if self.stem_type == 'v3':
       if self.pool_kernel_size is None:
         pool_sequential = tf.keras.Sequential([

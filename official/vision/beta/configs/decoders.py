@@ -51,8 +51,8 @@ class ASPP(hyperparams.Config):
   stem_type: str = 'v3'
   dropout_rate: float = 0.0
   num_filters: int = 256
-  use_sync_bn: bool = False
   pool_kernel_size: Optional[List[int]] = None  # Use global average pooling.
+  use_sync_bn: bool = False
 
 @dataclasses.dataclass
 class FOV(hyperparams.Config):
